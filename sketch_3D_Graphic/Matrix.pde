@@ -59,7 +59,7 @@ static class Matrix{
   }
   
   @Override
-  String toString(){
+  public String toString(){
     
     for(int i=0;i<vectors.length;i+=1){
       println(i+" : [ "+vectors[i]+" ]");

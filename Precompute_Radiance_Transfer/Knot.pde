@@ -79,7 +79,7 @@ public class Knot extends Object {
                     for (int l=0; l<skybox.SHOrder; l+=1) {
                         for (int m=-l; m<=l; m+=1) {
                             int index = l*(l+1)+m;                            
-                            prt_col[j] = prt_col[j].add( Lo[j][index].mult(SphereHarmonic.EvalSH(l, m, R.mult(1).unit_vector())));
+                            prt_col[j] = prt_col[j].add( Lo[j][index].mult(SphereHarmonic.EvalSH(l, m, R.mult(-1).unit_vector())));
                         }
                     }
                     

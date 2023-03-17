@@ -56,7 +56,7 @@ void setup() {
     initZBuffer();
     //setSky();
     
-    church = new SkyBox("GraceCathedral");
+    church = new SkyBox("church");
     skybox = church;
     setSkyBox(church);
 

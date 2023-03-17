@@ -7,7 +7,7 @@ abstract class Object {
     public Texture texture;
     public ArrayList<Vector> m_TransportSHCoeffs;
     public ArrayList<Matrix> matrix_TransportSHCoeffs;
-    protected float rho = 3.0;
+    protected float rho = 2.0;
     protected ShadowType shadowType = ShadowType.NonShadowed;
     protected MaterialType materialType =  MaterialType.Glossy;
 
