@@ -78,7 +78,7 @@ class CheckBox extends SelectableBox implements GUI,Function{
     select();
   }
   @Override
-    void getRun(ChangableObject o){      
+   public void getRun(ChangableObject o){      
        o.type=!(boolean)o.type;
     }
   
@@ -129,13 +129,13 @@ class SliderBox extends SelectableBox implements GUI,Function{
   }
   
   @Override
-  void getRun(ChangableObject o){    
+  public void getRun(ChangableObject o){    
     
     o.type=value;
   }
   
   @Override
-  void run(){
+  public void run(){
     show();
     select();
   }

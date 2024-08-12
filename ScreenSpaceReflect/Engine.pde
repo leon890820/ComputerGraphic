@@ -18,7 +18,7 @@ class Engine {
         
         main_cam.setPositionOrientation(pos,0,-1.4);//main_cam.setPositionOrientation(new Vector3(5, 5 , 5), 5.66, 3.6);
         main_cam.setSize(width, height, GH_MIN_CLIPPING, GH_FAR);
-        light_cam.setOrtho(-20, 20, -20, 20, 0.01, 1000);
+        light_cam.setOrtho(-1, 1, -1, 1, 0.01, 1000);
         light_cam.setPositionOrientation(light.pos,light.light_dir);
         light_cam.setSize(width, height, GH_MIN_CLIPPING, GH_FAR);
         render();

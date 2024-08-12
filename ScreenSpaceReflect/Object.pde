@@ -103,6 +103,7 @@ abstract class SSRObject extends GObject{
                     float w = calcInterpolation(coord,projection_position).w;
                     if (z<passZBuffer[index]) {        
                         passZBuffer[index] = z;
+                        
                         shadowDepthBuffer[index]=z*100;
                     }
                 }
@@ -186,7 +187,7 @@ abstract class SSRObject extends GObject{
         }
     
     }
-    int SAMPLE_NUM = 2;
+    int SAMPLE_NUM = 100;
     
     public void pass3(){
         Vector3 diffuse=new Vector3(0.66, 0.66, 0.66);
@@ -242,28 +243,28 @@ abstract class SSRObject extends GObject{
                     //col = (col.add(new Vector3(1))).mult(0.5);
                     
                     Vector3 L_ind = new Vector3();
-                    //for(int sam = 0;sam<SAMPLE_NUM;sam+=1){
-                    //    Object[] localDir = SampleHemisphereCos();
-                    //    Vector3 ld = (Vector3)localDir[0];
-                    //    float pdf = (float)localDir[1];
-                    //    Vector3 n = normalBuffer[index];
-                    //    Vector3[] b = LocalBasis(n);
+                    for(int sam = 0;sam<SAMPLE_NUM;sam+=1){
+                        Object[] localDir = SampleHemisphereCos();
+                        Vector3 ld = (Vector3)localDir[0];
+                        float pdf = (float)localDir[1];
+                        Vector3 n = normalBuffer[index];
+                        Vector3[] b = LocalBasis(n);
                         
-                    //    Vector3 dir = new Matrix4(b[0],b[1],n).mult(ld.getVector4(0)).xyz();//reflect(view_dir.mult(-1),n);//new Matrix4(b[0],b[1],n).mult(ld.getVector4(0)).xyz();
+                        Vector3 dir = new Matrix4(b[0],b[1],n).mult(ld.getVector4(0)).xyz();//reflect(view_dir.mult(-1),n);//new Matrix4(b[0],b[1],n).mult(ld.getVector4(0)).xyz();
 
-                    //    RayRecord rr = rayMarch(world_pos,dir);
-                    //    if(rr.hit){
-                    //        Vector3 hp = main_cam.Matrix().mult(rr.hit_point.getVector4(1)).homogenized();
-                    //        int hpindex = getIndex(hp);
-                    //        Vector3 dd = evalDiffuse(dir,view_dir,index).mult(1/pdf).product(evalDiffuse(light_dir,dir.mult(-1),hpindex)).product(evalDirectionLight(hpindex));
+                        RayRecord rr = rayMarch(world_pos,dir);
+                        if(rr.hit){
+                            Vector3 hp = main_cam.Matrix().mult(rr.hit_point.getVector4(1)).homogenized();
+                            int hpindex = getIndex(hp);
+                            Vector3 dd = evalDiffuse(dir,view_dir,index).mult(1/pdf).product(evalDiffuse(light_dir,dir.mult(-1),hpindex)).product(evalDirectionLight(hpindex));
                             
-                    //        L_ind = L_ind.add(dd);
-                    //    }
-                    //}
+                            L_ind = L_ind.add(dd.mult(2));
+                        }
+                    }
 
-                    //L_ind = L_ind.mult(1/(float)SAMPLE_NUM);
+                    L_ind = L_ind.mult(1/(float)SAMPLE_NUM);
                     
-                    //col = col.add(L_ind);
+                    col = col.add(L_ind);
                     col =pow( clamp(col,0,1),1);
                     if (z<zBuffer[index]) {
                         zBuffer[index]=z;

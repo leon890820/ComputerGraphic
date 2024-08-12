@@ -47,7 +47,7 @@ Vector3 pos = new Vector3(4.18927, 1.0313, 2.07331);
 void setup() {
     size(640, 640);
     background(0);
-    light=new Light(new Vector3(-0.45, 5.40507, 0.637043), new Vector3(0.39048811, -0.89896828, -0.19843153), new Vector3(1, 1, 1));
+    light=new Light(new Vector3(-1.85, 8.40507, -1.637043), new Vector3(0.39048811, -0.89896828, -0.19843153), new Vector3(1, 1, 1));
     //light=new Light(new Vector3(-5,-5,5),new Vector3(1,1,-1),new Vector3(1,1,1));
     engine=new Engine();
     main_cam=new Camera();    
