@@ -8,22 +8,9 @@
 
 
 uniform mat4 MVP;
-uniform mat4 modelMatrix;
-
 attribute vec4 vertex;
-attribute vec3 normal;
-
-varying vec3 vertNormal;
-varying vec3 worldVertex;
-
 
 void main() {
   // Vertex in clip coordinates
   gl_Position = MVP * vertex;
-  
-  // Normal vector in eye coordinates is passed
-  // to the fragment shader
-  vertNormal = normalize((modelMatrix * vec4(normal,0.0)).xyz);
-
-  worldVertex = (modelMatrix * vertex).xyz;
 }

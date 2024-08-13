@@ -3,31 +3,40 @@ public class Light {
     public Vector3 light_dir;
     public Vector3 light_color;
 
-    Light(Vector3 pos, Vector3 ld, Vector3 lc) {
+    public Light(Vector3 pos, Vector3 ld, Vector3 lc) {
         this.pos = pos;
         this.light_dir = ld;
         this.light_color = lc;
     }
-    public void setPos(Vector3 v) {
+    
+    public Light setPos(Vector3 v){
         this.pos = v;
+        return this;
+        
     }
-    public void setPos(float x, float y, float z) {
-        this.pos.set(x, y, z);
+    public Light setPos(float x,float y,float z){
+        this.pos.set(x,y,z);
+        return this;
     }
-
-    public void setLightColor(Vector3 v) {
+    
+    public Light setLightColor(Vector3 v){
         this.light_color = v;
+        return this;
     }
-
-    public void setLightColor(float x, float y, float z) {
-        this.light_color.set(x, y, z);
+    
+    public Light setLightColor(float x,float y,float z){
+        this.light_color.set(x,y,z);
+        return this;
     }
-
-    public void setLightdirection(Vector3 v) {
+    
+    public Light setLightdirection(Vector3 v){
         this.light_dir = v;
+        return this;
     }
-
-    public void setLightdirection(float x, float y, float z) {
-        this.light_dir.set(x, y, z);
+    
+    public Light setLightdirection(float x,float y,float z){
+        this.light_dir.set(x,y,z);
+        return this;
     }
+    
 }
