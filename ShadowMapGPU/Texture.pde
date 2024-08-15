@@ -25,7 +25,7 @@ public class Texture{
     }
     
     public Texture setSamplingMode(int m){
-        ((PGraphicsOpenGL)g).textureSampling(m);
+        ((PGraphicsOpenGL)img).textureSampling(m);
         return this;
     }
 

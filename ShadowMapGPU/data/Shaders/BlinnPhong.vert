@@ -19,7 +19,7 @@ attribute vec4 texCoord;
 
 varying vec3 vertNormal;
 varying vec3 worldVertex;
-varying vec3 lightVertex;
+varying vec4 lightVertex;
 varying vec2 tex_coord;
 
 
@@ -27,8 +27,8 @@ varying vec2 tex_coord;
 void main() {
   // Vertex in clip coordinates
   gl_Position = MVP * vertex;
-  vec4 lv = light_MVP * vertex;
-  lightVertex = lv.xyz / lv.w;
+  lightVertex = light_MVP * vertex;
+  //lightVertex = lv.xyz;
   tex_coord = texCoord.xy;
 
   vertNormal = normalize((modelMatrix * vec4(normal,0.0)).xyz);

@@ -31,7 +31,7 @@ public class ShadowMaterial extends Material{
         shader(shader);
         Camera light_cam = new Camera();
         light_cam.setPositionOrientation(main_light.pos,main_light.pos.add(main_light.light_dir));
-        light_cam.ortho(-100,100,-100,100,1,1000);
+        light_cam.ortho(-300,300,-300,300,1,1000);
                 
         shader.set("MVP",(light_cam.Matrix().mult(gameobject.localToWorld())).transposed().toPMatrix());  
     }
@@ -82,19 +82,20 @@ public class PhongMaterial extends Material{
          
          Camera light_cam = new Camera();
          light_cam.setPositionOrientation(main_light.pos,main_light.pos.add(main_light.light_dir));
-         light_cam.ortho(-100,100,-100,100,1,1000);
+         light_cam.ortho(-300,300,-300,300,1,1000);
          shader.set("light_MVP",(light_cam.Matrix().mult(gameobject.localToWorld())).transposed().toPMatrix());  
          
          shader.set("modelMatrix", gameobject.localToWorld().transposed().toPMatrix());
          shader.set("light_dir",main_light.light_dir.x,main_light.light_dir.y,main_light.light_dir.z);
+         shader.set("light_pos",main_light.pos.x,main_light.pos.y,main_light.pos.z);
         
          shader.set("ambient_light",AMBIENT_LIGHT.x,AMBIENT_LIGHT.y,AMBIENT_LIGHT.z);
          shader.set("albedo", albedo.x, albedo.y, albedo.z);
          shader.set("light_color", main_light.light_color.x, main_light.light_color.y, main_light.light_color.z);
-         shader.set("view_pos", main_camera.pos.x,main_camera.pos.y,main_camera.pos.z);
+         shader.set("view_pos", main_camera.pos.x,main_camera.pos.y,main_camera.pos.z);    
+         shader.set("resolution", width,height,1.0);    
          
-         shader.set("light_depth_tex",depth_texture.img);
-         
+         shader.set("light_depth_tex",depth_texture.img);         
          if(texture!=null)shader.set("tex",texture.img);
      }
 

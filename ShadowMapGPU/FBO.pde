@@ -1,14 +1,12 @@
-public class FBO{
-    Texture tex;
-    public FBO(){
-        tex = new Texture(width,height);
+public class FBO extends Texture{
+    public FBO(int w,int h){
+        super(w,h);
     }
     
     public void bindFrameBuffer(){
-
         loadPixels();        
-        tex.img.pixels = pixels;         
-        tex.img.updatePixels();
+        img.pixels = pixels;         
+        img.updatePixels();
         background(0);
     }
     

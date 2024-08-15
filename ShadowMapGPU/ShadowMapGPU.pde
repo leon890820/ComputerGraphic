@@ -34,17 +34,21 @@ boolean[] key_input={false,false,false,false};
 
 ShadowObject mona;
 ShadowObject floor;
+ShadowObject gura;
 
 ShadowObject light;
 
 Camera main_camera;
 Light main_light;
+
 ShadowMaterial shadowMaterial;
 PhongMaterial phongMaterial1;
 PhongMaterial phongMaterial2;
+PhongMaterial phongMaterial3;
 
 Texture mary_texture;
 Texture floor_texture;
+Texture gura_texture;
 
 FBO depth_FBO;
 float a = PI/4+0.2;
@@ -52,7 +56,7 @@ float a = PI/4+0.2;
 
 void setup() {
     background(0);
-    size(800, 800, P3D);
+    size(1600, 900, P3D);
 
     cameraSetting();
     lightSetting();
@@ -60,25 +64,42 @@ void setup() {
 }
 
 public void initSetting() {
+    setMaterial();
+    setGameObject();
+
+    depth_FBO = new FBO(width,height);
+}
+
+void setMaterial(){
     mary_texture = new Texture("Textures/MC003_Kozakura_Mari.png");
     floor_texture = new Texture("Textures/Floor.png");
-    //check_texture.setWrapMode(REPEAT).setSamplingMode(2);
-
+    gura_texture = new Texture("Textures/Atlas_33922.png");
+    
     shadowMaterial = new ShadowMaterial("Shaders/Shadow.frag", "Shaders/Shadow.vert");
     phongMaterial1 = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial1.setAlbedo(0.9, 0.9, 0.9).setTexture(floor_texture);
     phongMaterial2 = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial2.setAlbedo(0.9, 0.9, 0.9).setTexture(mary_texture);
+    phongMaterial3 = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
+    phongMaterial3.setAlbedo(0.9, 0.9, 0.9).setTexture(gura_texture);
+}
+
+void setGameObject(){
+    
+    //check_texture.setWrapMode(REPEAT).setSamplingMode(2);
 
     mona = new ShadowObject("Meshes/Marry.obj", shadowMaterial);
     mona.setPos(0.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(50,50,50);
+    
+    gura = new ShadowObject("Meshes/pekora.obj", shadowMaterial);
+    gura.setPos(100.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(50,50,50);
 
     floor = new ShadowObject("Meshes/ground.obj", shadowMaterial);
-    floor.setPos(0.0, -75.0, 0.0).setScale(200, 1, 200);
+    floor.setPos(0.0, -75.0, 0.0).setScale(400, 1, 400);
     
     light = new ShadowObject("Meshes/cube.obj", phongMaterial1);
+    light.setScale(2,2,2);
 
-    depth_FBO = new FBO();
 }
 
 public void cameraSetting() {
@@ -94,12 +115,10 @@ public void lightSetting() {
 void draw() {
 
     background(0);
-    //float dirY = (mouseY / float(height) - 0.5) * 2;
-    //float dirX = (mouseX / float(width) - 0.5) * 2;
     lights();
-    main_light.setPos(200*cos(a), 100 + 50*sin(a*2), 200*sin(a));
+    main_light.setPos(200*cos(a*3), 100 + 50*sin(a*2), 200*sin(a*5));
     main_light.setLightdirection(main_light.pos.mult(-1).unit_vector());
-    a+=0.01;
+    a+=0.003;
     
     move();
     render();
@@ -110,21 +129,29 @@ void draw() {
 
 void render() {
     mona.setMaterial(shadowMaterial);
+    gura.setMaterial(shadowMaterial);
     floor.setMaterial(shadowMaterial);
 
-
     mona.draw();
+    gura.draw();
     floor.draw();
 
     depth_FBO.bindFrameBuffer();
 
-    phongMaterial1.setDepthTexture(depth_FBO.tex);
-    phongMaterial2.setDepthTexture(depth_FBO.tex);
+    phongMaterial1.setDepthTexture(depth_FBO);
+    phongMaterial2.setDepthTexture(depth_FBO);
+    phongMaterial3.setDepthTexture(depth_FBO);
     mona.setMaterial(phongMaterial2);
+    gura.setMaterial(phongMaterial3);
     floor.setMaterial(phongMaterial1);
+    
+    light.setPos(main_light.pos);
 
-    mona.draw();
+
+    mona.draw(); 
+    gura.draw();
     floor.draw();
+    light.draw();
 }
 
 void keyPressed() {
