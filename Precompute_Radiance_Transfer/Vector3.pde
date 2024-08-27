@@ -254,6 +254,13 @@ public Vector3 random_in_unit_sphere() {
         return p;
     }
 }
+
+public Vector3 random_unit_sphere_vector(){
+    float phi = random(0,1) * 2 * PI;
+    float theta = acos(-2 * random(-0.5,0.5));
+    return toVector(phi,theta);
+}
+
 Vector3 random_unit_vector() {
     return Vector3.unit_vector(random_in_unit_sphere());
 }

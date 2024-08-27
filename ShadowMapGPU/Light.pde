@@ -1,5 +1,5 @@
-public class Light {
-    public Vector3 pos;
+public class Light extends GameObject{
+
     public Vector3 light_dir;
     public Vector3 light_color;
 
@@ -9,15 +9,6 @@ public class Light {
         this.light_color = lc;
     }
     
-    public Light setPos(Vector3 v){
-        this.pos = v;
-        return this;
-        
-    }
-    public Light setPos(float x,float y,float z){
-        this.pos.set(x,y,z);
-        return this;
-    }
     
     public Light setLightColor(Vector3 v){
         this.light_color = v;
@@ -37,6 +28,14 @@ public class Light {
     public Light setLightdirection(float x,float y,float z){
         this.light_dir.set(x,y,z);
         return this;
+    }
+    
+    @Override
+    public void draw(){
+        //println(material);
+        material.setGameobject(this);
+        material.run();           
+        shape(shape);
     }
     
 }

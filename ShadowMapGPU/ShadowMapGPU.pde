@@ -36,8 +36,6 @@ ShadowObject mona;
 ShadowObject floor;
 ShadowObject gura;
 
-ShadowObject light;
-
 Camera main_camera;
 Light main_light;
 
@@ -56,17 +54,18 @@ float a = PI/4+0.2;
 
 void setup() {
     background(0);
-    size(1600, 900, P3D);
+    size(900, 900, P3D);
 
+    setMaterial();
     cameraSetting();
     lightSetting();
     initSetting();
+    
 }
 
 public void initSetting() {
-    setMaterial();
+    
     setGameObject();
-
     depth_FBO = new FBO(width,height);
 }
 
@@ -89,16 +88,15 @@ void setGameObject(){
     //check_texture.setWrapMode(REPEAT).setSamplingMode(2);
 
     mona = new ShadowObject("Meshes/Marry.obj", shadowMaterial);
-    mona.setPos(0.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(50,50,50);
+    mona.setPos(10.0, -75.0, 20.0).setEular(PI/3, PI/4, -PI/5).setScale(50,50,50);
+    
     
     gura = new ShadowObject("Meshes/pekora.obj", shadowMaterial);
-    gura.setPos(100.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(50,50,50);
+    gura.setPos(00.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(100,100,100);
 
     floor = new ShadowObject("Meshes/ground.obj", shadowMaterial);
     floor.setPos(0.0, -75.0, 0.0).setScale(400, 1, 400);
-    
-    light = new ShadowObject("Meshes/cube.obj", phongMaterial1);
-    light.setScale(2,2,2);
+
 
 }
 
@@ -110,6 +108,8 @@ public void cameraSetting() {
 
 public void lightSetting() {
     main_light = new Light(new Vector3(200*cos(a), 200, 200*sin(a)), new Vector3(-1.0, -1.0, -1.0), new Vector3(0.8));
+    main_light.setShape("Meshes/cube.obj").setMaterial(phongMaterial1).setScale(2,2,2);
+    
 }
 
 void draw() {
@@ -118,7 +118,7 @@ void draw() {
     lights();
     main_light.setPos(200*cos(a*3), 100 + 50*sin(a*2), 200*sin(a*5));
     main_light.setLightdirection(main_light.pos.mult(-1).unit_vector());
-    a+=0.003;
+    //a+=0.003;
     
     move();
     render();
@@ -132,7 +132,7 @@ void render() {
     gura.setMaterial(shadowMaterial);
     floor.setMaterial(shadowMaterial);
 
-    mona.draw();
+    //mona.draw();
     gura.draw();
     floor.draw();
 
@@ -145,13 +145,13 @@ void render() {
     gura.setMaterial(phongMaterial3);
     floor.setMaterial(phongMaterial1);
     
-    light.setPos(main_light.pos);
+    
 
 
-    mona.draw(); 
+    //mona.draw(); 
     gura.draw();
     floor.draw();
-    light.draw();
+    main_light.draw();
 }
 
 void keyPressed() {

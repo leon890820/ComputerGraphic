@@ -132,6 +132,7 @@ static public class SphereHarmonic {
                     result.v[ind]+=sh*func_val;
                 }
             }
+            
         }
         float weight = (float)4.0*PI/(float)(sampler.samples.size());
         for (int i=0; i<result.s; i+=1) {

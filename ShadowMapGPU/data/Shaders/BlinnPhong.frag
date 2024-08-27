@@ -99,7 +99,7 @@ float shadow_map(vec3 coord){
   vec2 light_tex_coord = coord.xy;
   light_tex_coord.y = (1.0 - light_tex_coord.y);
   float depth = texture(light_depth_tex,light_tex_coord).r;
-  float shadow = coord.z - depth >  bias ? 0.0 : 1.0;
+  float shadow = coord.z - depth >  0.1 ? 0.0 : 1.0;
   return shadow;
 }
 
@@ -134,7 +134,7 @@ float findBlocker(vec3 coord,float zReceiver) {
   vec2 light_tex_coord = coord.xy;
   light_tex_coord.y = (1.0 - light_tex_coord.y);
 
-  float searchRadius = LIGHT_WORLD_SIZE / 600.0 * (posZFromLight) / (posZFromLight + 1);
+  float searchRadius = LIGHT_WORLD_SIZE / 600.0 * (posZFromLight + 1) / (posZFromLight);
   
   poissonDiskSamples(coord.xy);
   for(int i = 0; i < NUM_SAMPLES; i++){
@@ -195,5 +195,5 @@ void main() {
 
   color = ambient + (diffuse + specular) * sw;
 
-  gl_FragColor = vec4(color,1.0);
+  gl_FragColor = vec4(tex_coord,0.0,1.0);
 }

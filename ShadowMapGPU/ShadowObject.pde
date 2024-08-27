@@ -1,6 +1,5 @@
 public class ShadowObject extends GameObject{
-    
-    
+        
     public ShadowObject(String mesh){
         shape = loadShape(mesh);
     }
@@ -10,9 +9,7 @@ public class ShadowObject extends GameObject{
         material = m;
     }
     
-    
-
-    
+        
     @Override
     public void draw(){
         material.setGameobject(this);
@@ -20,5 +17,4 @@ public class ShadowObject extends GameObject{
         shape(shape);
     }
     
-
 }
