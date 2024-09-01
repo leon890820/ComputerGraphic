@@ -27,7 +27,46 @@ public class Camera extends GameObject{
         return invProjection;
     }
     
-    void draw(){};
+    @Override
+    public void init(){
+        intBuffer = allocateDirectIntBuffer(1);        
+        posBuffer = allocateDirectFloatBuffer(1 * 2 * 3);
+        positions = getPointLine();
+        posBuffer.rewind();
+        posBuffer.put(positions);
+        posBuffer.rewind(); 
+    }
+    
+    public float[] getPointLine(){
+        float[] result = new float[6];
+        Vector3 forward = localToWorld().mult(new Vector3(0, 0, -1)).unit_vector();
+        Vector3 lap = pos.add(forward.mult(10));
+        result[0] = pos.x; result[3] = lap.x; 
+        result[1] = pos.y; result[4] = lap.y; 
+        result[2] = pos.z; result[5] = lap.z; 
+        
+        return result;
+    }
+    
+    void run() {
+       
+
+        int posLoc = gl.glGetAttribLocation(material.shader.glProgram, "aVertexPosition");
+        gl.glEnableVertexAttribArray(posLoc);
+        gl.glGenBuffers(1, intBuffer);
+        int posVboId = intBuffer.get(0);
+        
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, posVboId);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, Float.BYTES * positions.length, posBuffer, GL.GL_STATIC_DRAW);
+        gl.glVertexAttribPointer(posLoc, 3, GL.GL_FLOAT, false, 3 * Float.BYTES, 0);        
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);        
+        gl.glDrawArrays(PGL.LINES, 0, 1 * 6);
+
+    }
+    
+    void draw(){
+    
+    };
     
     Matrix4 Matrix() {
         return projection.mult(worldView);

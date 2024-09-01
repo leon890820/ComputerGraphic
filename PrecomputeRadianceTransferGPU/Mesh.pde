@@ -255,11 +255,35 @@ class Triangle {
     Vector3[] uvs;
     Vector3[] normal;
     int[] triangle;
+    Vector3 center;
+    
     Triangle(Vector3[] verts, Vector3[] uvs, Vector3[] normal, int[] triangle) {
         this.verts=verts;
         this.uvs=uvs;
         this.normal=normal;
         this.triangle=triangle;
+        
+        center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0/3.0);
+    }
+    
+    public boolean intersection(Vector3 o,Vector3 dir,Matrix4 ltw){
+        Vector3 v0 = ltw.mult(verts[0]);
+        Vector3 v1 = ltw.mult(verts[1]);
+        Vector3 v2 = ltw.mult(verts[2]);
+        
+        Vector3 e1 = Vector3.sub(v1,v0);
+        Vector3 e2 = Vector3.sub(v2,v0);
+        Vector3 s = Vector3.sub(o , v0);
+        Vector3 s1 = Vector3.cross(dir , e2);
+        Vector3 s2 = Vector3.cross(s , e1);
+        float se_inv = 1.0 / Vector3.dot(s1,e1);
+        
+        float t = Vector3.dot(s2,e2) * se_inv;
+        float b1 = Vector3.dot(s1,s) * se_inv;
+        float b2 = Vector3.dot(s2,dir) * se_inv;
+        
+        if(b1 > 0.01 && b2 > 0.01 && 1-b1-b2 > 0.01 && t > 0.01) return true;
+        return false;
     }
 
     @Override

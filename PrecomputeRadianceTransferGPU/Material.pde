@@ -18,6 +18,32 @@ public abstract class Material {
     abstract void run();
 }
 
+public class BoundingBoxMaterial extends Material{
+    
+    Vector3 albedo = new Vector3();
+    boolean hit;
+    
+    public BoundingBoxMaterial(String frag) {
+        super(frag);
+    }
+    public BoundingBoxMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+    
+    public BoundingBoxMaterial setAlbedo(float x,float y,float z){
+        albedo.set(x,y,z);
+        return this;
+    }
+    
+    @Override 
+    public void run(){
+        shader(shader);
+        shader.set("MVP", gameobject.MVP().transposed().toPMatrix());
+        shader.set("albedo",albedo.x,albedo.y,albedo.z);
+        shader.set("hit", hit ? 1 : 0);
+    }
+}
+
 public class Skybox extends Material {
 
     Texture[] skycube = new Texture[6];
@@ -159,11 +185,19 @@ public class PRTMaterial extends Material {
                
                 float[] light_transport = new float[shCof * shCof];
                 Vector3 normal = gameobject.shape.triangles.get(i).normal[j];
+                Vector3 pos = gameobject.shape.triangles.get(i).verts[j];
                 float di = 4 * PI / sample_number;
                 for(int s = 0; s < sample_number; s++){
-                    Vector3 sample_ray = sampler.sample_rays[s];
+                    Vector3 sample_ray = sampler.sample_rays[s];                    
+                    float ndoti = 0.0;
+                    if(pt == PRTType.NONSHADOW) ndoti = max(0.0, Vector3.dot(sample_ray,normal));
+                    else if(pt == PRTType.SHADOW){
+                        if(!((PRTObject)gameobject).intersection(pos,sample_ray)){
+                            ndoti = max(0.0, Vector3.dot(sample_ray,normal));
+                        }else ndoti = 0.0;
+                    }
                     
-                    float ndoti = max(0.0, Vector3.dot(sample_ray,normal));
+                    
                     for(int l = 0; l < shCof;l++){
                         for(int m = -l ; m <= l; m++){
                             int sh_index = l * (l + 1) + m;

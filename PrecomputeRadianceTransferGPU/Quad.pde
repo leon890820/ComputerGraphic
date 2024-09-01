@@ -5,10 +5,7 @@ public class Quad extends GameObject{
         setMaterial(m);
         init();
     }
-    
-
-
-    
+        
     @Override
     public void draw(){
         
@@ -22,16 +19,58 @@ public class Quad extends GameObject{
     }
 }
 
+public class PhongObject extends GameObject{
+    BVH bvh;
+    
+    public PhongObject(String mesh,Material m){
+        setShape(mesh);
+        setMaterial(m);
+        init();
+        
+        bvh = new BVH(shape.triangles,MAX_BVP_DEPTH);
+        bvh.setGameObject(this);
+    }
+    
+    
+    public boolean intersection(Vector3 o,Vector3 dir){
+        return bvh.intersection(o,dir);
+    }
+
+        
+    @Override
+    public void draw(){
+        
+        material.setGameobject(this);
+        material.shader.bind();          
+        material.run();   
+        run();
+        material.shader.unbind();
+        
+        bvh.setGameObject(this);
+        bvh.draw();
+        
+    }
+}
+
 public class PRTObject extends GameObject{
     FloatBuffer lightBuffer;
     float[] lights;
+    BVH bvh;
     
     public PRTObject(String mesh,Material m){
         setShape(mesh);
         setMaterial(m);
         material.setGameobject(this);
+        bvh = new BVH(shape.triangles,MAX_BVP_DEPTH);
+        bvh.setGameObject(this);
         ((PRTMaterial) material).preCalculateLightTransport();
         init();
+        
+    }
+    
+    public boolean intersection(Vector3 o,Vector3 dir){
+        
+        return bvh.intersection(o,dir);
     }
     
     @Override
@@ -57,6 +96,7 @@ public class PRTObject extends GameObject{
         run();
         material.shader.unbind();
         
+        //bvh.draw();
     }
     
     @Override

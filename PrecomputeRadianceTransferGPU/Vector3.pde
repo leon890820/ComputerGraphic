@@ -59,25 +59,33 @@ static final public class Vector3 {
   
   public static Vector3 add(Vector3 a, Vector3 b) {
     Vector3 result=new Vector3();
-    result.x=a.x+b.x;
-    result.y=a.y+b.y;
-    result.z=a.z+b.z;
+    result.x = a.x+b.x;
+    result.y = a.y+b.y;
+    result.z = a.z+b.z;
     return result;
   }
   public static Vector3 sub(Vector3 a, Vector3 b) {
     Vector3 result=new Vector3();
-    result.x=a.x-b.x;
-    result.y=a.y-b.y;
-    result.z=a.z-b.z;
+    result.x = a.x-b.x;
+    result.y = a.y-b.y;
+    result.z = a.z-b.z;
     return result;
   }
   public static Vector3 mult(float n, Vector3 a) {
     Vector3 result=new Vector3();
-    result.x=n*a.x;
-    result.y=n*a.y;
-    result.z=n*a.z;
+    result.x = n*a.x;
+    result.y = n*a.y;
+    result.z = n*a.z;
     return result;
   }
+  public static Vector3 mult(Vector3 a, Vector3 b) {
+    Vector3 result=new Vector3();
+    result.x = a.x * b.x;
+    result.y = a.y * b.y;
+    result.z = a.z * b.z;
+    return result;
+  }
+  
   public Vector3 mult(float n) {
     Vector3 result=new Vector3();
     result.x=n*x;

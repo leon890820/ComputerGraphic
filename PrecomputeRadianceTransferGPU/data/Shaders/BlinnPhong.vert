@@ -23,6 +23,8 @@ varying vec2 tex_coord;
 
 
 
+
+
 void main() {
   // Vertex in clip coordinates
   gl_Position = MVP * vec4(aVertexPosition,1.0);

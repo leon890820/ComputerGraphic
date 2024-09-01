@@ -14,7 +14,7 @@ static int GH_SCREEN_WIDTH = 1280;
 static int GH_SCREEN_HEIGHT = 720;
 static int GH_SCREEN_X = 50;
 static int GH_SCREEN_Y = 50;
-static float GH_FOV = 30.0f;
+static float GH_FOV = 20.0f;
 static float GH_NEAR_MIN = 1e-3f;
 static float GH_NEAR_MAX = 1e-1f;
 static float GH_FAR = 1000.0f;
@@ -38,6 +38,8 @@ static float GH_PLAYER_RADIUS = 0.2f;
 static float GH_GRAVITY = 0;//-9.8f;
 static Vector3 AMBIENT_LIGHT = new Vector3(0.3, 0.3, 0.3);
 
+static int MAX_BVP_DEPTH = 20;
+
 boolean[] key_input={false, false, false, false};
 
 Camera main_camera;
@@ -46,10 +48,13 @@ Light main_light;
 
 PhongMaterial lightMaterial1;
 PhongMaterial phongMaterial1;
+BoundingBoxMaterial boundingBoxMaterial;
+
 Skybox skyboxMaterial;
 PRTMaterial prtMaterial1;
 Quad skybox;
 PRTObject pekora;
+PhongObject dragon;
 
 Texture mary_texture;
 Texture floor_texture;
@@ -62,23 +67,24 @@ GL2ES2 gl;
 
 float a = PI/4 + 0.2;
 int shCof = 4;
-int sample_number = 100;
-float INV_PI = 1.0 / PI * 2;
+int sample_number = 10;
+float INV_PI = 3.0/ PI;
+
+PRTType pt = PRTType.SHADOW;
 
 void setup() {
     background(0);
     size(800, 800, P3D);
-    
-    pgl = (PJOGL) beginPGL();  
+
+    pgl = (PJOGL) beginPGL();
     gl = pgl.gl.getGL2ES2();
-    
-    sampler = new Sampler(sample_number,shCof);
+
+    sampler = new Sampler(sample_number, shCof);
 
     setMaterial();
     cameraSetting();
     lightSetting();
     initSetting();
-
 }
 
 
@@ -91,29 +97,33 @@ void draw() {
     main_light.setPos(200*cos(a*3), 100 + 50*sin(a*2), 200*sin(a*5));
     main_light.setLightdirection(main_light.pos.mult(-1).unit_vector());
     a+=0.003;
-
+    //Vector3 forward = main_camera.localToWorld().mult(new Vector3(0, 0, -1));    
+    //println(dragon.intersection(main_camera.pos,forward));
+    
 
     move();
     render();
-    
+
 
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
 }
 
 FloatBuffer allocateDirectFloatBuffer(int n) {
-  return ByteBuffer.allocateDirect(n * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+    return ByteBuffer.allocateDirect(n * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
 }
 
 IntBuffer allocateDirectIntBuffer(int n) {
-  return ByteBuffer.allocateDirect(n * Integer.BYTES).order(ByteOrder.nativeOrder()).asIntBuffer();
+    return ByteBuffer.allocateDirect(n * Integer.BYTES).order(ByteOrder.nativeOrder()).asIntBuffer();
 }
+
+
 
 void render() {
     skybox.draw();
     main_light.draw();
     pekora.draw();
-    
+    //dragon.draw();
 }
 
 public void initSetting() {
@@ -125,6 +135,9 @@ void setGameObject() {
     skybox = new Quad("Meshes/quad.obj", skyboxMaterial);
     pekora = new PRTObject("Meshes/pekora.obj",prtMaterial1);
     pekora.setScale(50,50,50);
+
+    dragon = new PhongObject("Meshes/Dragon_8K.obj", phongMaterial1);
+    dragon.setScale(50, 50, 50);
 }
 
 void setMaterial() {
@@ -134,30 +147,28 @@ void setMaterial() {
     lightMaterial1.setAlbedo(0.9, 0.9, 0.9).setTexture(floor_texture);
 
     skyboxMaterial = new Skybox("Shaders/skybox.frag", "Shaders/skybox.vert");
-    skyboxMaterial.setSkycube("Textures/CornellBox");
-    
+    skyboxMaterial.setSkycube("Textures/church");
+
     pekora_texture = new Texture("Textures/Atlas_33922.png");
     phongMaterial1 = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial1.setAlbedo(0.9, 0.9, 0.9);//.setTexture(pekora_texture);
-    
+
     prtMaterial1 = new PRTMaterial("Shaders/preconputetransform.frag", "Shaders/preconputetransform.vert");
 
     skyboxMaterial.precomputeSphereHarmonicParameter(shCof);
 
     //saveCof(cof);
-   
-    
 }
 
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPos(0.0, 20.0, 100);
+    main_camera.setPos(0.0, 00.0, 100);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 
 public void lightSetting() {
-    main_light = new Light(new Vector3(0, 0, 0), new Vector3(200 * cos(a), 50, 200 * sin(a)), new Vector3(0.8) , "Meshes/cube.obj",lightMaterial1);
+    main_light = new Light(new Vector3(0, 0, 0), new Vector3(200 * cos(a), 50, 200 * sin(a)), new Vector3(0.8), "Meshes/cube.obj", lightMaterial1);
     main_light.setScale(2, 2, 2);
 }
 
