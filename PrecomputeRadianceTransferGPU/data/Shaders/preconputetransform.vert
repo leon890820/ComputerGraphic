@@ -16,11 +16,13 @@ attribute vec3 aVertexPosition;
 attribute vec3 aNormalPosition;
 attribute vec2 aTextureCoord;
 
-attribute mat4 lightMat;
+//attribute mat4 lightMat;
 
-uniform mat4 shCofr;
-uniform mat4 shCofg;
-uniform mat4 shCofb;
+//uniform mat4 shCofr;
+//uniform mat4 shCofg;
+//uniform mat4 shCofb;
+
+attribute vec3 aColor;
 
 varying vec4 prt_color;
 
@@ -34,5 +36,5 @@ void main() {
   // Vertex in clip coordinates
   gl_Position = MVP * vec4(aVertexPosition,1.0);
 
-  prt_color = vec4(vec3(dotMat(lightMat,shCofr),dotMat(lightMat,shCofg),dotMat(lightMat,shCofb)),1.0);
+  prt_color = vec4(aColor,1.0);
 }

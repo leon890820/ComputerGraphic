@@ -25,6 +25,24 @@ public class BVH{
          }
          return false;
      }
+     
+     public boolean intersection(Vector3 o,Vector3 dir,HitRecord hit){
+         if(!boundingBox.intersection(o,dir)) return false;
+                  
+         if(childA == null ? triangle_intersection(o,dir,hit) : childA.intersection(o,dir,hit)) return true;
+         if(childB == null ? triangle_intersection(o,dir,hit) : childB.intersection(o,dir,hit)) return true;
+         
+         return false;
+     }
+     
+     boolean triangle_intersection(Vector3 o,Vector3 dir,HitRecord hit){
+         boolean flag = false;
+         for(Triangle t : tris){
+             flag = flag || t.intersection(o,dir,boundingBox.go.localToWorld(),hit);
+         }
+         return flag;
+     }
+     
     
     void setBoundingBox(){
                 
@@ -40,12 +58,12 @@ public class BVH{
         }
 
         boundingBox = new BoundingBox(minRecord,maxRecord);
-        boundingBox.setMaterial(new BoundingBoxMaterial("Shaders/BoundingBox.frag","Shaders/BoundingBox.vert").setAlbedo(random(1),random(1),random(1)));
+        //boundingBox.setMaterial(new BoundingBoxMaterial("Shaders/BoundingBox.frag","Shaders/BoundingBox.vert").setAlbedo(random(1),random(1),random(1)));
     }
     
     void splitBVH(int depth){
         if(depth == 0) return;
-        if(tris.size() <= 1) return;
+        if(tris.size() <= 10) return;
         Vector3 size = boundingBox.maxB.sub(boundingBox.minB);
         int a = size.x > size.y && size.x > size.z ? 0 : size.y > size.z? 1 :2 ; 
         
@@ -93,7 +111,7 @@ public class BoundingBox extends GameObject{
     }
     
     public void setHit(boolean hit){
-        ((BoundingBoxMaterial)material).hit = hit;
+        //((BoundingBoxMaterial)material).hit = hit;
     }
     
     public boolean intersection(Vector3 o,Vector3 dir){

@@ -195,5 +195,5 @@ void main() {
 
   color = ambient + (diffuse + specular) * sw;
 
-  gl_FragColor = vec4(tex_coord,0.0,1.0);
+  gl_FragColor = vec4(vertNormal,1.0);
 }

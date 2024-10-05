@@ -91,8 +91,8 @@ void setGameObject(){
     mona.setPos(10.0, -75.0, 20.0).setEular(PI/3, PI/4, -PI/5).setScale(50,50,50);
     
     
-    gura = new ShadowObject("Meshes/pekora.obj", shadowMaterial);
-    gura.setPos(00.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(100,100,100);
+    gura = new ShadowObject("Meshes/ina.obj", shadowMaterial);
+    gura.setPos(00.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(0.5,0.5,0.5);
 
     floor = new ShadowObject("Meshes/ground.obj", shadowMaterial);
     floor.setPos(0.0, -75.0, 0.0).setScale(400, 1, 400);

@@ -8,7 +8,7 @@ class Mesh {
 
 
     Mesh(String fname) {
-        String[] fin=loadStrings(fname);
+        String[] fin=loadStrings(fname + ".obj");
         for (int i=0; i<fin.length; i+=1) {
             String line=fin[i];
             if (line.indexOf("# ")!=-1) {
@@ -188,9 +188,13 @@ class Mesh {
 
         Vector3[] vs = {verts.get(a),  verts.get(b) , verts.get(c)};
         Vector3[] normal = n_ix[0] == -1 ? new Vector3[]{null,null,null} : new Vector3[]{normals.get(an), normals.get(bn), normals.get(cn)};
-        Vector3[] us = uv_ix[0] == -1 ? new Vector3[]{null,null,null} : new Vector3[]{uvs.get(at), uvs.get(bt), uvs.get(ct)};
+        Vector3[] us;
+        if(at >= uvs.size() || bt >= uvs.size() || ct >= uvs.size()){
+            us = new Vector3[]{new Vector3(0),new Vector3(0),new Vector3(0)};
+        }
+        else us = uv_ix[0] == -1 ? new Vector3[]{null,null,null} : new Vector3[]{uvs.get(at), uvs.get(bt), uvs.get(ct)};
 
-        triangles.add(new Triangle(vs, us, normal, v_ix));
+        triangles.add(new Triangle(vs, us, normal, v_ix,triangles.size()));
 
     }
     
@@ -256,12 +260,14 @@ class Triangle {
     Vector3[] normal;
     int[] triangle;
     Vector3 center;
+    int idx;
     
-    Triangle(Vector3[] verts, Vector3[] uvs, Vector3[] normal, int[] triangle) {
+    Triangle(Vector3[] verts, Vector3[] uvs, Vector3[] normal, int[] triangle,int id) {
         this.verts=verts;
         this.uvs=uvs;
         this.normal=normal;
         this.triangle=triangle;
+        this.idx = id;
         
         center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0/3.0);
     }
@@ -285,6 +291,35 @@ class Triangle {
         if(b1 > 0.01 && b2 > 0.01 && 1-b1-b2 > 0.01 && t > 0.01) return true;
         return false;
     }
+    
+    public boolean intersection(Vector3 o,Vector3 dir,Matrix4 ltw,HitRecord hit){
+        Vector3 v0 = ltw.mult(verts[0]);
+        Vector3 v1 = ltw.mult(verts[1]);
+        Vector3 v2 = ltw.mult(verts[2]);
+        
+        Vector3 e1 = Vector3.sub(v1,v0);
+        Vector3 e2 = Vector3.sub(v2,v0);
+        Vector3 s = Vector3.sub(o , v0);
+        Vector3 s1 = Vector3.cross(dir , e2);
+        Vector3 s2 = Vector3.cross(s , e1);
+        float se_inv = 1.0 / Vector3.dot(s1,e1);
+        
+        float t = Vector3.dot(s2,e2) * se_inv;
+        float b1 = Vector3.dot(s1,s) * se_inv;
+        float b2 = Vector3.dot(s2,dir) * se_inv;
+        
+        if(b1 > 0.01 && b2 > 0.01 && 1-b1-b2 > 0.01 && t > 0.01) {
+            if(hit.t > t){
+                hit.t = t;
+                hit.bary = new Vector3(b1,b2,1-b1-b2);
+                hit.pos = o.add(dir.mult(t));
+                hit.tri = this;
+            }
+            return true;
+        }
+        return false;
+    }
+    
 
     @Override
         public String toString() {
@@ -298,4 +333,11 @@ class Triangle {
         }
         return s;
     }
+}
+
+class HitRecord{
+    Vector3 pos;
+    float t = 1.0/0.0;
+    Vector3 bary;
+    Triangle tri;
 }

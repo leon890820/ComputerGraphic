@@ -38,7 +38,8 @@ static float GH_PLAYER_RADIUS = 0.2f;
 static float GH_GRAVITY = 0;//-9.8f;
 static Vector3 AMBIENT_LIGHT = new Vector3(0.3, 0.3, 0.3);
 
-static int MAX_BVP_DEPTH = 20;
+static int MAX_BVP_DEPTH = 26;
+static int MAX_DEPTH = 2;
 
 boolean[] key_input={false, false, false, false};
 
@@ -67,8 +68,8 @@ GL2ES2 gl;
 
 float a = PI/4 + 0.2;
 int shCof = 4;
-int sample_number = 10;
-float INV_PI = 3.0/ PI;
+int sample_number = 100;
+float INV_PI = 2.0/ PI;
 
 PRTType pt = PRTType.SHADOW;
 
@@ -107,6 +108,7 @@ void draw() {
 
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
+    //noLoop();
 }
 
 FloatBuffer allocateDirectFloatBuffer(int n) {
@@ -132,11 +134,11 @@ public void initSetting() {
 }
 
 void setGameObject() {
-    skybox = new Quad("Meshes/quad.obj", skyboxMaterial);
-    pekora = new PRTObject("Meshes/pekora.obj",prtMaterial1);
-    pekora.setScale(50,50,50);
+    skybox = new Quad("Meshes/quad", skyboxMaterial);
+    pekora = new PRTObject("Meshes/happy1",prtMaterial1);
+    pekora.setScale(100,100,100);
 
-    dragon = new PhongObject("Meshes/Dragon_8K.obj", phongMaterial1);
+    dragon = new PhongObject("Meshes/Dragon_8K", phongMaterial1);
     dragon.setScale(50, 50, 50);
 }
 
@@ -155,20 +157,21 @@ void setMaterial() {
 
     prtMaterial1 = new PRTMaterial("Shaders/preconputetransform.frag", "Shaders/preconputetransform.vert");
 
-    skyboxMaterial.precomputeSphereHarmonicParameter(shCof);
-
+    String[] par = loadStrings("Textures/church/parameter.tx");
+    if(par == null) skyboxMaterial.precomputeSphereHarmonicParameter(shCof);
+    else skyboxMaterial.precomputeSphereHarmonicParameter(shCof,par);
     //saveCof(cof);
 }
 
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPos(0.0, 00.0, 100);
+    main_camera.setPos(0.0,20.0,50).setEular(-0.0,0.0,0.0);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 
 public void lightSetting() {
-    main_light = new Light(new Vector3(0, 0, 0), new Vector3(200 * cos(a), 50, 200 * sin(a)), new Vector3(0.8), "Meshes/cube.obj", lightMaterial1);
+    main_light = new Light(new Vector3(0, 0, 0), new Vector3(200 * cos(a), 50, 200 * sin(a)), new Vector3(0.8), "Meshes/cube", lightMaterial1);
     main_light.setScale(2, 2, 2);
 }
 

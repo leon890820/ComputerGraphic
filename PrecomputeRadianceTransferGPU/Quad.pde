@@ -56,6 +56,7 @@ public class PRTObject extends GameObject{
     FloatBuffer lightBuffer;
     float[] lights;
     BVH bvh;
+    boolean glossy = true;
     
     public PRTObject(String mesh,Material m){
         setShape(mesh);
@@ -63,23 +64,61 @@ public class PRTObject extends GameObject{
         material.setGameobject(this);
         bvh = new BVH(shape.triangles,MAX_BVP_DEPTH);
         bvh.setGameObject(this);
-        ((PRTMaterial) material).preCalculateLightTransport();
+        
+        if(!glossy){
+            diffuse();
+        }else{
+            ((PRTMaterial) material).preCalculateLightTransportGlossy();
+        }
+        
         init();
         
     }
     
-    public boolean intersection(Vector3 o,Vector3 dir){
-        
+    
+    void diffuse(){
+                
+            String[] light_cof = loadStrings(name + ".prt");
+            if(light_cof == null) ((PRTMaterial) material).preCalculateLightTransport(name);
+            else ((PRTMaterial) material).preCalculateLightTransport(light_cof);
+            if(pt == PRTType.INTERSHADOW) {      
+                String[] light_cof_inter = loadStrings(name + ".inter");          
+                if(light_cof_inter == null){
+                    for(int i = 0; i < shape.verts.size();i++){
+                        println("indirect : " + (float)i/(float)shape.verts.size() * 100 + "%");
+                        for(int j = 0; j < 3; j++){
+                            Vector3 pos = shape.triangles.get(i).verts[j];
+                            Vector3 normal = shape.triangles.get(i).normal[j];
+                            float[] lds = ((PRTMaterial) material).calcInterreflectionSH(pos,normal,MAX_DEPTH);
+                            for(int k = 0; k < lds.length; k++){
+                                ((PRTMaterial) material).light_transport_array.get(i*3+j)[k] += lds[k];
+                            }
+                            
+                        }
+                    }
+                    ((PRTMaterial) material).saveLightTransportInter(name);
+                }else{
+                    ((PRTMaterial) material).preCalculateLightTransportInter(light_cof_inter);
+                }
+            }
+    
+    }
+    
+    public boolean intersection(Vector3 o,Vector3 dir){      
         return bvh.intersection(o,dir);
+    }
+    
+    public boolean intersection(Vector3 o,Vector3 dir,HitRecord hit){        
+        return bvh.intersection(o,dir,hit);
     }
     
     @Override
     public void init(){
         super.init();
         
-        lightBuffer = allocateDirectFloatBuffer(shape.triangles.size() * 16 * 3);
-        lights = ((PRTMaterial) material).getLightTransportArray();
-
+        lightBuffer = allocateDirectFloatBuffer(shape.triangles.size() * 3 * 3);
+        if(!glossy) lights = ((PRTMaterial) material).getColorArray();
+        else lights = ((PRTMaterial) material).getColorArrayGlossy();
         lightBuffer.rewind();
         lightBuffer.put(lights);
         lightBuffer.rewind();
@@ -104,7 +143,7 @@ public class PRTObject extends GameObject{
         int posLoc = gl.glGetAttribLocation(material.shader.glProgram, "aVertexPosition");
         int uvLoc = gl.glGetAttribLocation(material.shader.glProgram, "aTextureCoord");
         int normalLoc = gl.glGetAttribLocation(material.shader.glProgram, "aNormalPosition");
-        int lightLoc = gl.glGetAttribLocation(material.shader.glProgram, "lightMat");
+        int lightLoc = gl.glGetAttribLocation(material.shader.glProgram, "aColor");
         gl.glEnableVertexAttribArray(posLoc);
         gl.glEnableVertexAttribArray(uvLoc);
         gl.glEnableVertexAttribArray(normalLoc);
@@ -138,11 +177,12 @@ public class PRTObject extends GameObject{
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, lightVboId);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, Float.BYTES * lights.length, lightBuffer, GL.GL_STATIC_DRAW);
            
-        for(int i = 0; i < 4; i++){
-            gl.glEnableVertexAttribArray(lightLoc + i);
-            gl.glVertexAttribPointer(lightLoc + i, 4, GL.GL_FLOAT, false, 16 * Float.BYTES,  i * 16);            
-        }
         
+        gl.glEnableVertexAttribArray(lightLoc);
+        gl.glVertexAttribPointer(lightLoc, 3, GL.GL_FLOAT, false, 3 * Float.BYTES,  0);            
+        
+        
+
         
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);        
         gl.glDrawArrays(PGL.TRIANGLES,0,shape.triangles.size() * 3);

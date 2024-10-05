@@ -7,6 +7,8 @@ public abstract class GameObject {
     Mesh shape;
     Material material;
     
+    String name;
+    
     FloatBuffer posBuffer;
     float[] positions;
     
@@ -30,6 +32,11 @@ public abstract class GameObject {
         eular.setZero();
         scale.setOnes();
         p_scale = 1;
+    }
+    
+    public GameObject setName(String s) {
+        name = s;
+        return this;
     }
 
     public GameObject setPos(Vector3 v) {
@@ -72,6 +79,7 @@ public abstract class GameObject {
     }
 
     public GameObject setShape(String mesh) {
+        setName(mesh);
         shape = new Mesh(mesh);
         return this;
     }
@@ -128,20 +136,22 @@ public abstract class GameObject {
         gl.glBufferData(GL.GL_ARRAY_BUFFER, Float.BYTES * positions.length, posBuffer, GL.GL_STATIC_DRAW);
         gl.glVertexAttribPointer(posLoc, 3, GL.GL_FLOAT, false, 3 * Float.BYTES, 0);
         
+        if(shape.normals.size() > 0){
+           
+            int normalVboId = intBuffer.get(1);
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, normalVboId);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, Float.BYTES * normals.length, normalBuffer, GL.GL_STATIC_DRAW);
+            gl.glVertexAttribPointer(normalLoc, 3, GL.GL_FLOAT, false, 3 * Float.BYTES, 0);
+        }
+        
         if(shape.uvs.size() > 0){          
-            int uvVboId = intBuffer.get(1);
+            int uvVboId = intBuffer.get(2);
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, uvVboId);
             gl.glBufferData(GL.GL_ARRAY_BUFFER, Float.BYTES * uvs.length, uvBuffer, GL.GL_STATIC_DRAW);
             gl.glVertexAttribPointer(uvLoc, 2, GL.GL_FLOAT, false, 2 * Float.BYTES, 0);
         }
         
-        if(shape.normals.size() > 0){
-           
-            int normalVboId = intBuffer.get(2);
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, normalVboId);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, Float.BYTES * normals.length, normalBuffer, GL.GL_STATIC_DRAW);
-            gl.glVertexAttribPointer(normalLoc, 3, GL.GL_FLOAT, false, 3 * Float.BYTES, 0);
-        }
+        
         
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
         

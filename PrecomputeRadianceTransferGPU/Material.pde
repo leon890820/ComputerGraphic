@@ -77,7 +77,15 @@ public class Skybox extends Material {
         shader.set("skycube5", skycube[4].img);
         shader.set("skycube6", skycube[5].img);
     }
-
+    public void precomputeSphereHarmonicParameter(int shOrder,String[] par) {
+        shParameter = new Vector3[shOrder*shOrder];
+        String[] sx = par[0].split(" ");
+        String[] sy = par[1].split(" ");
+        String[] sz = par[2].split(" ");
+        for(int i = 0; i < shParameter.length; i++){
+            shParameter[i] = new Vector3(float(sx[i]),float(sy[i]),float(sz[i]));
+        }
+    }
     public void precomputeSphereHarmonicParameter(int shOrder) {
         shParameter = new Vector3[shOrder*shOrder];
         float w = skycube[0].img.width;
@@ -109,7 +117,7 @@ public class Skybox extends Material {
                     dir = uniformCube(dir);
                     int index = ((int)h-y-1) *(int)w + x;
                     Vector3 Le = colorToVector3(skycube[i].img.pixels[index]);
-                    float delta_w = 2 * PI / (w * h * 6);//calcArea(x, h-y-1);
+                    float delta_w = 4 * PI / (w * h * 6);//calcArea(x, h-y-1);
 
                     for (int l=0; l<shOrder; l+=1) {
                         for (int m=-l; m<=l; m+=1) {
@@ -121,7 +129,13 @@ public class Skybox extends Material {
                 }
             }
         }
-
+        String[] s = new String[]{"","",""};
+        for(int i = 0; i < shParameter.length; i++){
+            s[0] += shParameter[i].x + " ";
+            s[1] += shParameter[i].y + " ";
+            s[2] += shParameter[i].z + " ";
+        }
+        saveStrings("data/Textures/church/parameter.txt",s);
     }
 }
 
@@ -129,7 +143,7 @@ public class PRTMaterial extends Material {
       
     
     ArrayList<float[]> light_transport_array = new ArrayList<float[]>();
-    
+    ArrayList<float[][]> light_transport_glossy_array = new ArrayList<float[][]>();
     
     public PRTMaterial(String frag) {
         super(frag);
@@ -141,43 +155,118 @@ public class PRTMaterial extends Material {
     }
 
     public void run() {
-        //shader(shader);
-        Vector3[] skym = skyboxMaterial.shParameter;
-        Matrix4 scr = new Matrix4(skym[0].x,  skym[1].x,  skym[2].x,  skym[3].x,
-                                  skym[4].x,  skym[5].x,  skym[6].x,  skym[7].x,
-                                  skym[8].x,  skym[9].x,  skym[10].x, skym[11].x,
-                                  skym[12].x, skym[13].x, skym[14].x, skym[15].x);
-                                  
-        Matrix4 scg = new Matrix4(skym[0].y,  skym[1].y,  skym[2].y,  skym[3].y,
-                                  skym[4].y,  skym[5].y,  skym[6].y,  skym[7].y,
-                                  skym[8].y,  skym[9].y,  skym[10].y, skym[11].y,
-                                  skym[12].y, skym[13].y, skym[14].y, skym[15].y);
-                                  
-        Matrix4 scb = new Matrix4(skym[0].z,  skym[1].z,  skym[2].z,  skym[3].z,
-                                  skym[4].z,  skym[5].z,  skym[6].z,  skym[7].z,
-                                  skym[8].z,  skym[9].z,  skym[10].z, skym[11].z,
-                                  skym[12].z, skym[13].z, skym[14].z, skym[15].z);
-                                
+        //shader(shader);                                
         shader.set("MVP", gameobject.MVP().transposed().toPMatrix());
-        shader.set("shCofr", scr.toPMatrix());
-        shader.set("shCofg", scg.toPMatrix());
-        shader.set("shCofb", scb.toPMatrix());
+
     }
     
-    public float[] getLightTransportArray(){
-        float[] result = new float[light_transport_array.size() * 16];
-        for(int i=0; i < light_transport_array.size(); i++){
-            float[] f = light_transport_array.get(i);
-            for(int j = 0; j < 16; j++){
-                int index = i * 16 + j;
-                result[index] = f[j];
-            }
-        }
+    public float[] getColorArrayGlossy(){
+        float[] result = new float[light_transport_glossy_array.size() * 3];
+        Vector3[] skybox_cof = skyboxMaterial.shParameter;
+        for(int i=0; i < light_transport_glossy_array.size(); i++){
+            Vector3[] s = new Vector3[skybox_cof.length];
+            for(int j = 0; j < s.length; j++){
+                s[j] = dot(skybox_cof,light_transport_glossy_array.get(i)[j]);
                 
+            }
+            
+            Vector3 wo = (main_camera.pos.sub(gameobject.shape.triangles.get(int(i / 3)).verts[i % 3])).unit_vector();
+            Vector3 N = gameobject.shape.triangles.get(int(i / 3)).verts[i % 3].unit_vector();
+            Vector3 R = (N.mult(2*Vector3.dot(N, wo)).sub(wo)).unit_vector();
+            
+            Vector3 c = new Vector3(0.0);
+            for(int l = 0; l < shCof;l++){
+                for(int m = -l ; m <= l; m++){
+                    int index = l * (l + 1) + m;
+                    c = c.add(s[index].mult(SphereHarmonic.EvalSH(l,m,wo.mult(1))*1.2));
+                }
+            }
+            result[3 * i + 0] = c.x;
+            result[3 * i + 1] = c.y;
+            result[3 * i + 2] = c.z;
+            
+        }
+        
         return result;
     }
     
-    public void preCalculateLightTransport(){
+    public float[] getColorArray(){
+        float[] result = new float[light_transport_array.size() * 3];
+        Vector3[] skybox_cof = skyboxMaterial.shParameter;
+        for(int i=0; i < light_transport_array.size(); i++){
+            Vector3 s = dot(skybox_cof,light_transport_array.get(i));
+            result[i * 3 + 0] = s.x;
+            result[i * 3 + 1] = s.y;
+            result[i * 3 + 2] = s.z;
+        }
+        return result;
+    }
+    
+    public void preCalculateLightTransport(String[] light_trans){
+        light_transport_array.clear();
+        for(int i = 0; i < light_trans.length; i++){
+            String[] ss = light_trans[i].split(" ");
+            float[] ff = new float[ss.length];
+            for(int j = 0; j < ss.length; j++){
+                ff[j] = float(ss[j]);
+            }
+            light_transport_array.add(ff);            
+        }
+    }
+    
+    public void preCalculateLightTransportInter(String[] light_trans){
+        light_transport_array.clear();
+        for(int i = 0; i < light_trans.length; i++){
+            String[] ss = light_trans[i].split(" ");
+            float[] ff = new float[ss.length];
+            for(int j = 0; j < ss.length; j++){
+                ff[j] = float(ss[j]);
+            }
+            light_transport_array.add(ff);            
+        }
+    }
+    public void preCalculateLightTransportGlossy(){
+         for(int i = 0; i < gameobject.shape.triangles.size();i++){
+            println("sample : " + (float)i/gameobject.shape.triangles.size());
+            for(int j = 0; j < 3; j++){                     
+                float[][] light_transport = new float[shCof * shCof][shCof * shCof];
+                Vector3 normal = gameobject.shape.triangles.get(i).normal[j].unit_vector();
+                Vector3 pos = gameobject.shape.triangles.get(i).verts[j];
+                float di = 4 * PI / (float)sample_number;
+               
+                for(int s = 0; s < sample_number; s++){
+                    Vector3 sample_ray = sampler.sample_rays[s];   
+                    float ndoti = 0.0;
+                    if(pt == PRTType.NONSHADOW) ndoti = max(0.0, Vector3.dot(sample_ray,normal));
+                    else{
+                        if(!((PRTObject)gameobject).intersection(pos,sample_ray)){
+                            ndoti = max(0.0, Vector3.dot(sample_ray,normal));
+                        }else ndoti = 0.0;
+                    }
+                    
+                    
+                    for(int l = 0; l < shCof;l++){
+                        for(int m = -l ; m <= l; m++){
+                            for(int ll = 0; ll < shCof;ll++){
+                                for(int mm = -ll ; mm <= ll; mm++){
+                                    int sh_lmindex = l * (l + 1) + m;
+                                    int sh_llmmindex = ll * (ll + 1) + mm;
+                                    float sh = ndoti * sampler.sample[s][sh_lmindex] * sampler.sample[s][sh_llmmindex] * di;
+                                    light_transport[sh_lmindex][sh_llmmindex] += sh;
+                                    
+                                }
+                            }                                                                               
+                        }
+                    }
+                }
+                
+                light_transport_glossy_array.add(light_transport);   
+                
+            }                                   
+        }
+        println(light_transport_glossy_array.size());
+    }
+    public void preCalculateLightTransport(String name){
         
         for(int i = 0; i < gameobject.shape.triangles.size();i++){
              println("sample : " + (float)i/gameobject.shape.triangles.size());
@@ -187,11 +276,12 @@ public class PRTMaterial extends Material {
                 Vector3 normal = gameobject.shape.triangles.get(i).normal[j];
                 Vector3 pos = gameobject.shape.triangles.get(i).verts[j];
                 float di = 4 * PI / sample_number;
+               
                 for(int s = 0; s < sample_number; s++){
-                    Vector3 sample_ray = sampler.sample_rays[s];                    
+                    Vector3 sample_ray = sampler.sample_rays[s];   
                     float ndoti = 0.0;
                     if(pt == PRTType.NONSHADOW) ndoti = max(0.0, Vector3.dot(sample_ray,normal));
-                    else if(pt == PRTType.SHADOW){
+                    else{
                         if(!((PRTObject)gameobject).intersection(pos,sample_ray)){
                             ndoti = max(0.0, Vector3.dot(sample_ray,normal));
                         }else ndoti = 0.0;
@@ -209,8 +299,61 @@ public class PRTMaterial extends Material {
                 light_transport_array.add(light_transport);                
             }                                   
         }
-          
+        //saveLightTransport(name);
     }
+    
+    public float[] calcInterreflectionSH(Vector3 pos,Vector3 normal,int depth){        
+        float[] cof = new float[shCof*shCof];
+        if(depth < 0) return cof;
+        for(int i = 0; i < sample_number; i++){
+            Vector3 dir = sampler.sample_rays[i];
+            HitRecord hit = new HitRecord();
+            float H = Vector3.dot(dir.unit_vector(),normal.unit_vector());
+            boolean inter = ((PRTObject)gameobject).intersection(pos,dir,hit);
+            if(H > 0 && inter){
+                Vector3 hit_pos = hit.pos;
+                Vector3 hit_normal = hit.tri.normal[0].mult(hit.bary.x).add(hit.tri.normal[1].mult(hit.bary.y)).add(hit.tri.normal[2].mult(hit.bary.z));
+                float[] in_cof = calcInterreflectionSH(hit_pos,hit_normal,depth - 1);
+                for(int j=0;j<in_cof.length;j++){
+                    float interSH = light_transport_array.get(hit.tri.idx * 3 + 0)[j] * hit.bary.x + 
+                                    light_transport_array.get(hit.tri.idx * 3 + 1)[j] * hit.bary.y +
+                                    light_transport_array.get(hit.tri.idx * 3 + 2)[j] * hit.bary.z   ;
+                    cof[j] += (in_cof[i] + interSH) * H / sample_number;
+                                    
+                }
+                
+            }
+        }
+        
+        return cof;
+    }
+    
+    public void saveLightTransport(String name){
+        String[] result = new String[light_transport_array.size()];
+        for(int i = 0; i < result.length; i++){
+            float[] fs = light_transport_array.get(i);
+            String s = "";
+            for(float f : fs){
+                s += str(f) + " ";
+            }
+            result[i] = s;
+        }
+        saveStrings("data/" + name + ".prt",result);
+    }
+    
+    public void saveLightTransportInter(String name){
+        String[] result = new String[light_transport_array.size()];
+        for(int i = 0; i < result.length; i++){
+            float[] fs = light_transport_array.get(i);
+            String s = "";
+            for(float f : fs){
+                s += str(f) + " ";
+            }
+            result[i] = s;
+        }
+        saveStrings("data/" + name + ".inter",result);
+    }
+    
 }
 
 
