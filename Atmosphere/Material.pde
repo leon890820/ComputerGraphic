@@ -24,6 +24,88 @@ public abstract class Material {
     abstract void run(GameObject go);
 }
 
+public class AtmosphereMaterial extends Material {
+    Texture main_tex;
+    Texture main_tex2;
+    float numInScateringPoints;
+    float numOpticalDepthPoints;
+    float densityFalloff;
+    float atmosphereRadius;
+    float radius;
+    
+    Vector3 lambda = new Vector3();
+    
+    public AtmosphereMaterial(String frag) {
+        super(frag);
+    }
+    public AtmosphereMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+    
+    public void run(GameObject go) {
+        shader(shader);
+        setGameobject(go);
+        setTexture("main_tex", main_tex, 0);
+        setTexture("depth_tex", main_tex2, 1);
+        
+        
+        shader.set("numInScateringPoints", numInScateringPoints);
+        shader.set("numOpticalDepthPoints", numOpticalDepthPoints);
+        shader.set("densityFalloff", densityFalloff);
+        shader.set("atmosphereRadius", atmosphereRadius);
+        shader.set("radius", radius);
+        
+        shader.set("lambda", lambda.x, lambda.y, lambda.z);
+        
+        shader.set("invProject", main_camera.projection.Inverse().transposed().toPMatrix());
+        shader.set("camToWorld", main_camera.worldView.Inverse().transposed().toPMatrix());
+                
+        shader.set("cam_pos", main_camera.transform.position.x, main_camera.transform.position.y, main_camera.transform.position.z);
+        shader.set("light_dir", main_light.light_dir.x, main_light.light_dir.y, main_light.light_dir.z);
+        
+    }
+    
+    public AtmosphereMaterial setRadius(float f) {
+        radius = f;
+        return this;
+    }
+    
+    public AtmosphereMaterial setAtmosphereRadius(float f) {
+        atmosphereRadius = f;
+        return this;
+    }
+    
+    public AtmosphereMaterial setNumOpticalDepthPoints(float f) {
+        numOpticalDepthPoints = f;
+        return this;
+    }
+    
+    public AtmosphereMaterial setNumInScateringPoints(float f) {
+        numInScateringPoints = f;
+        return this;
+    }
+    
+    public AtmosphereMaterial setDensityFalloff(float f) {
+        densityFalloff = f;
+        return this;
+    }
+    
+    public AtmosphereMaterial setLambda(float x, float y, float z) {
+        lambda.set(x,y,z);
+        return this;
+    }
+    
+    public AtmosphereMaterial setMainTexture(Texture t) {
+        main_tex = t;
+        return this;
+    }
+    
+    public AtmosphereMaterial setMainTexture2(Texture t) {
+        main_tex2 = t;
+        return this;
+    }
+}
+
 public class OceanMaterial extends Material {
     Texture main_tex;
     Texture main_tex2;
@@ -37,6 +119,7 @@ public class OceanMaterial extends Material {
     float waveStrength;
     float waveScale;
     float waveSpeed;
+    float radius;
     
     Vector3 colA = new Vector3();
     Vector3 colB = new Vector3();
@@ -57,7 +140,7 @@ public class OceanMaterial extends Material {
         shader.set("waveA", waveA.img);
         shader.set("waveB", waveB.img);
         
-        shader.set("radius", go.transform.scale.x);
+        shader.set("radius", radius);
         shader.set("depthMultiplier", depthMultiplier);
         shader.set("alphaMultiplier", alphaMultiplier);
         shader.set("smoothness", smoothness);
@@ -76,6 +159,11 @@ public class OceanMaterial extends Material {
         shader.set("cam_pos", main_camera.transform.position.x, main_camera.transform.position.y, main_camera.transform.position.z);
         shader.set("light_dir", main_light.light_dir.x, main_light.light_dir.y, main_light.light_dir.z);
 
+    }
+    
+    public OceanMaterial setRadius(float f) {
+        radius = f;
+        return this;
     }
     
     public OceanMaterial setdepthMultiplier(float f) {

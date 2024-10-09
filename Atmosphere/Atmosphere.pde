@@ -1,5 +1,3 @@
-import controlP5.*;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -29,7 +27,7 @@ static int GH_MAX_RECURSION = 4;
 //Gameplay
 static float GH_MOUSE_SENSITIVITY = 0.01f;
 static float GH_MOUSE_SMOOTH = 0.5f;
-static float GH_WALK_SPEED = 0.05f;
+static float GH_WALK_SPEED = 0.01f;
 static float GH_WALK_ACCEL = 50.0f;
 static float GH_BOB_FREQ = 8.0f;
 static float GH_BOB_OFFS = 0.015f;
@@ -51,6 +49,7 @@ EarthMaterial earthMaterial;
 MoonMaterial moonMaterial;
 OceanMaterial oceanMaterial;
 PhongMaterial phongMaterial;
+AtmosphereMaterial atmosphereMaterial;
 
 PhongObject dragon;
 
@@ -63,7 +62,8 @@ Texture waveBTexture;
 
 Icosahedron moon;
 Earth earth;
-Quad quad;
+Quad ocean;
+Quad atmosphere;
 
 
 PhongObject bunny;
@@ -72,13 +72,16 @@ PhongObject bunny;
 PJOGL pgl;
 GL2ES2 gl;
 GL3 gl3;
-FBO main_texture_fbo;
+FBO ocean_fbo;
+FBO atmosphere_fbo;
 
 PImage img;
 
 
 float a = PI / 2;
 float time = 0.0;
+
+float earthRadius = 1.0;
 
 
 void setup() {
@@ -89,8 +92,8 @@ void setup() {
     gl = pgl.gl.getGL2ES2();
     gl3 = ((PJOGL)beginPGL()).gl.getGL3();
     
-    main_texture_fbo = new FBO(width,height,1);
-
+    ocean_fbo = new FBO(width,height,1);
+    atmosphere_fbo = new FBO(width,height,1);
 
     lightSetting();
     cameraSetting();
@@ -103,16 +106,22 @@ void setup() {
 void draw() {
     
     move();   
-    main_texture_fbo.bindFrameBuffer();
+    ocean_fbo.bindFrameBuffer();
     background(0);
     //moon.run();
     earth.run();
     
+    
+    atmosphere_fbo.bindFrameBuffer();
+    background(0);
+    ocean.run();
+    
     gl3.glBindFramebuffer(gl3.GL_FRAMEBUFFER , 0);
     background(0);
-    quad.run();
-    main_light.setLightdirection(-200 * cos(a), -100, -200 * sin(a));
-    //a+=0.01;
+    atmosphere.run();
+    
+    main_light.setLightdirection(0, 200 * sin(a), 200 * cos(a));
+    a+=0.005;
     time += 1.0 / frameRate;
 
     
@@ -142,9 +151,10 @@ void setGameObject() {
     NoiseSetting earthSetting = new NoiseSetting(2.0, 4.65 , 6 , 1.0 , 0.5, new Vector3());
     NoiseSetting earthRidgeSetting = new NoiseSetting(4.0, 8.7 , 5 , 1.5 , 0.5, new Vector3(), 2.18, 0.8, 0.09, 1.0);
     earth = new Earth(earthMaterial, 300, 0, earthSetting,earthRidgeSetting);
-    earth.setScale(1,1,1).setPosition(0,0,0);
+    earth.setScale(earthRadius,earthRadius,earthRadius).setPosition(0,0,0);
     
-    quad = new Quad("Meshes/quad",oceanMaterial);
+    ocean = new Quad("Meshes/quad",oceanMaterial);
+    atmosphere = new Quad("Meshes/quad",atmosphereMaterial);
 
 }
 
@@ -165,9 +175,13 @@ void setMaterial() {
                  .setSteepLow(0.52,0.49,0.18).setSteepHigh(0.14,0.06,0.0);
     
     oceanMaterial = new OceanMaterial("Shaders/Ocean.frag", "Shaders/Ocean.vert");
-    oceanMaterial.setMainTexture(main_texture_fbo.tex[0]).setMainTexture2(main_texture_fbo.depthtex).setColA(0.382,0.9,0.865)
+    oceanMaterial.setMainTexture(ocean_fbo.tex[0]).setMainTexture2(ocean_fbo.depthtex).setColA(0.382,0.9,0.865)
     .setColB(0.1,0.32,0.6).setdepthMultiplier(14.4).setalphaMultiplier(64.33).setSmoothness(0.92).setSpecularCol(0.96,1.0,0.88)
-    .setWaveStrength(0.9).setWaveA(waveATexture).setWaveB(waveBTexture).setWaveScale(15.0).setWaveSpeed(0.02);
+    .setWaveStrength(0.9).setWaveA(waveATexture).setWaveB(waveBTexture).setWaveScale(15.0).setWaveSpeed(0.02).setRadius(earthRadius);
+    
+    atmosphereMaterial = new AtmosphereMaterial("Shaders/Atmosphere.frag", "Shaders/Atmosphere.vert");
+    atmosphereMaterial.setMainTexture(atmosphere_fbo.tex[0]).setMainTexture2(ocean_fbo.depthtex).setNumInScateringPoints(20.0).setDensityFalloff(3.5)
+                       .setNumOpticalDepthPoints(20.0).setAtmosphereRadius(1.0 + earthRadius).setRadius(earthRadius).setLambda(700,530,440);
     
     phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5);
