@@ -87,7 +87,7 @@ public class Camera extends GameObject{
     }
 
     void setPositionOrientation(Vector3 pos, Vector3 la) {
-        this.pos = pos;
+        this.transform.position = pos;
         Vector3 f = pos.sub(la);
         float rotX = atan2(f.y, sqrt(f.z*f.z+f.x*f.x));
         float rotY = 2*PI-atan2(f.x, f.z);
@@ -95,7 +95,7 @@ public class Camera extends GameObject{
     }
     
     void update(){
-        setPositionOrientation(pos, -eular.x, -eular.y);
+        setPositionOrientation(transform.position, -transform.eular.x, -transform.eular.y);
     }
 
     void useViewport() {

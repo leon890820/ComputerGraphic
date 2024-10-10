@@ -1,3 +1,13 @@
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+
+import com.jogamp.opengl.GL;
+import com.jogamp.opengl.GL2ES2;
+import com.jogamp.opengl.GL3;
+
+
 static boolean GH_START_FULLSCREEN = false;
 static boolean GH_HIDE_MOUSE = true;
 static boolean GH_USE_SKY = true;
@@ -16,7 +26,7 @@ static int GH_MAX_RECURSION = 4;
 //Gameplay
 static float GH_MOUSE_SENSITIVITY = 0.01f;
 static float GH_MOUSE_SMOOTH = 0.5f;
-static float GH_WALK_SPEED = 1.7f;
+static float GH_WALK_SPEED = 0.01f;
 static float GH_WALK_ACCEL = 50.0f;
 static float GH_BOB_FREQ = 8.0f;
 static float GH_BOB_OFFS = 0.015f;
@@ -29,79 +39,89 @@ static float GH_PLAYER_RADIUS = 0.2f;
 static float GH_GRAVITY = 0;//-9.8f;
 static Vector3 AMBIENT_LIGHT = new Vector3(0.3, 0.3, 0.3);
 
-boolean[] key_input={false,false,false,false};
+boolean[] key_input={false, false, false, false};
 
 Camera main_camera;
 Light main_light;
 
+PhongMaterial phongMaterial;
+PhongObject pekora;
+   
+PJOGL pgl;
+GL2ES2 gl;
+GL3 gl3;
 
-PhongMaterial lightMaterial1;
 
 
-Texture mary_texture;
-Texture floor_texture;
-Texture gura_texture;
 
-float a = PI/4+0.2;
+float a = PI / 2;
+float time = 0.0;
+
+
+
 
 void setup() {
-    background(0);
     size(900, 900, P3D);
-    
-    setMaterial();
-    cameraSetting();
+    randomSeed(0);
+
+    pgl = (PJOGL) beginPGL();  
+    gl = pgl.gl.getGL2ES2();
+    gl3 = ((PJOGL)beginPGL()).gl.getGL3();
+
     lightSetting();
+    cameraSetting();
+    setMaterial();
     initSetting();
-    
+
 }
 
+
 void draw() {
+    
+    move();   
 
     background(0);
-    lights();
-    main_light.setPos(200*cos(a*3), 100 + 50*sin(a*2), 200*sin(a*5));
-    main_light.setLightdirection(main_light.pos.mult(-1).unit_vector());
-    //a+=0.003;
+    pekora.run();
     
-    move();
-    render();
+    main_light.setLightdirection(0, 200 * sin(a), 200 * cos(a));
+
+
+
     
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
 }
 
-void render() {
 
-    main_light.draw();
-}
 
 public void initSetting() {
-    
     setGameObject();
+}
+
+void setGameObject() {
+    pekora = new PhongObject("Meshes/pekora", phongMaterial);
+    //dragon.setScale(50, 50, 50);    
+  
+
+
 
 }
 
-void setGameObject(){}
-
-void setMaterial(){
-
-    floor_texture = new Texture("Textures/Floor.png");    
-    lightMaterial1 = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
-    lightMaterial1.setAlbedo(0.9, 0.9, 0.9).setTexture(floor_texture);
-
+void setMaterial() {  
+    phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
+    phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5);
 }
 
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPos(0.0,50.0,200);
+    main_camera.setPosition(0.0, 1.0, 2.0).setEular(-0.0, 0.0, 0.0);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 
 public void lightSetting() {
-    main_light = new Light(new Vector3(200*cos(a), 200, 200*sin(a)), new Vector3(-1.0, -1.0, -1.0), new Vector3(0.8));
-    main_light.setShape("Meshes/cube.obj").setMaterial(lightMaterial1).setScale(2,2,2);
-    
+    main_light = new Light(new Vector3(0, 0, 0), new Vector3(-200 * cos(a), 500, -200 * sin(a)), new Vector3(0.8));
+    main_light.setScale(2, 2, 2);
 }
 
 
@@ -118,6 +138,7 @@ void keyPressed() {
     if (key=='D'||key=='d') {
         key_input[3]=true;
     }
+
     
 }
 
@@ -137,22 +158,22 @@ void keyReleased() {
 }
 
 void move() {
-    if(mousePressed){
-        if(mouseButton == RIGHT){
+    if (mousePressed) {
+        if (mouseButton == RIGHT) {
             float dx = (pmouseX - mouseX) * GH_MOUSE_SENSITIVITY;
             float dy = (pmouseY - mouseY) * GH_MOUSE_SENSITIVITY;
-            main_camera.eular.set(main_camera.eular.x + dy,main_camera.eular.y + dx , 0.0);
+            main_camera.transform.eular.set(main_camera.transform.eular.x + dy, main_camera.transform.eular.y + dx, 0.0);
         }
     }
-    
-    Vector3 forward = main_camera.localToWorld().mult(new Vector3(0,0,-1));
-    Vector3 right = main_camera.localToWorld().mult(new Vector3(1,0,0));
-    
+
+    Vector3 forward = main_camera.localToWorld().mult(new Vector3(0, 0, -1));
+    Vector3 right = main_camera.localToWorld().mult(new Vector3(1, 0, 0));
+
     float wx = key_input[3] ? 1.0 * GH_WALK_SPEED : key_input[1] ? -1.0 * GH_WALK_SPEED : 0.0;
     float wz = key_input[0] ? 1.0 * GH_WALK_SPEED : key_input[2] ? -1.0 * GH_WALK_SPEED: 0.0;
-    
+
     Vector3 mv = forward.mult(wz).add(right.mult(wx));
-    main_camera.pos = main_camera.pos.add(mv);
+    main_camera.transform.position = main_camera.transform.position.add(mv);
 
     main_camera.update();
 }

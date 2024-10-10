@@ -4,7 +4,7 @@ public class Light extends GameObject{
     public Vector3 light_color;
 
     public Light(Vector3 pos, Vector3 ld, Vector3 lc) {
-        this.pos = pos;
+        this.transform.position = pos;
         this.light_dir = ld;
         this.light_color = lc;
     }
@@ -30,11 +30,6 @@ public class Light extends GameObject{
         return this;
     }
     
-    @Override
-    public void draw(){
-        material.setGameobject(this);
-        material.run();           
-        shape(shape);
-    }
+
     
 }

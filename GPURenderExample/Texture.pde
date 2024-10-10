@@ -1,8 +1,10 @@
 public class Texture{
-    PImage img;
+    PImage img;    
+    IntBuffer tex;
     
     public Texture(int w,int h){
-        img = createImage(w,h,ARGB);
+        tex = IntBuffer.allocate(1);
+        gl3.glGenTextures(1 , tex);
     }
     
     public Texture(String s){

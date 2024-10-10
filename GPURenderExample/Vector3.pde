@@ -221,6 +221,13 @@ static final public class Vector3 {
   }
 }
 
+
+public Vector3 random_unit_sphere_vector(){
+    float phi = random(0,1) * 2 * PI;
+    float theta = acos(-2 * random(-0.5,0.5));
+    return toVector(phi,theta);
+}
+
 public Vector3 vec_random(){
   return new Vector3(random(1),random(1),random(1));
 }
@@ -299,6 +306,8 @@ static public class Vector4{
   Vector4 reverseW(){
     return new Vector4(x,y,z,-abs(w));
   }
+  
+  void set(float _x, float _y, float _z,float _w) { x = _x; y = _y; z = _z; w = _w;}
   
   Vector4 add(Vector4 v){
     return new Vector4(x+v.x,y+v.y,z+v.z,w);

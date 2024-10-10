@@ -1,5 +1,5 @@
 public static class Matrix4{
-  float m[]=new float[16];
+  float m[] = new float[16];
   public Matrix4(){
       makeZero(); 
   }
