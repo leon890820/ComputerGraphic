@@ -20,6 +20,10 @@ public abstract class Material {
         int textureLocation = gl3.glGetUniformLocation(shader.glProgram, name);
         gl3.glUniform1i(textureLocation, c);   
     }
+    void setMatrix4ToUniform(String s , Matrix4 m){
+        int depthtextureLocation = gl3.glGetUniformLocation(shader.glProgram, s);
+        gl3.glUniformMatrix4fv(depthtextureLocation , 1 , false , toFloatBuffer(m));    
+    }
 
     abstract void run(GameObject go);
 }
@@ -60,10 +64,9 @@ public class PhongMaterial extends Material {
 
 
     public void run(GameObject go) {
-        shader(shader);
         setGameobject(go);
-        shader.set("MVP", gameobject.MVP().transposed().toPMatrix());
-        shader.set("modelMatrix", gameobject.localToWorld().transposed().toPMatrix());
+        setMatrix4ToUniform("MVP", gameobject.MVP().transposed());
+        setMatrix4ToUniform("modelMatrix", gameobject.localToWorld().transposed());
         shader.set("light_dir", main_light.light_dir.x, main_light.light_dir.y, main_light.light_dir.z);
 
         shader.set("ambient_light", AMBIENT_LIGHT.x, AMBIENT_LIGHT.y, AMBIENT_LIGHT.z);
@@ -73,4 +76,52 @@ public class PhongMaterial extends Material {
 
         if (texture!=null)shader.set("tex", texture.img);
     }
+    
+    
+}
+
+public class LineMaterial extends Material {
+    Vector3 albedo = new Vector3();
+    
+    public LineMaterial(String frag) {
+        super(frag);
+    }
+    public LineMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+    public void run(GameObject go) {
+        shader(shader);
+        setGameobject(go);
+        setMatrix4ToUniform("MVP", gameobject.MVP().transposed());
+        shader.set("albedo", albedo.x, albedo.y, albedo.z);
+    }
+    public LineMaterial setAlbedo(float x, float y, float z) {
+        albedo.set(x, y, z);
+        return this;
+    }
+    
+}
+
+public class PortalMaterial extends Material {
+    Texture main_tex;
+    
+    public PortalMaterial(String frag) {
+        super(frag);
+    }
+    public PortalMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+    public void run(GameObject go) {
+        shader(shader);
+        setGameobject(go);
+        setMatrix4ToUniform("MVP", gameobject.MVP().transposed());
+        setTexture("main_tex", main_tex, 0);
+
+    }
+    public PortalMaterial setMainTexture(Texture t) {
+        main_tex = t;
+        return this;
+    }
+
+    
 }

@@ -87,6 +87,10 @@ public Vector3 lerp(Vector3 a, Vector3 b, float t) {
     return new Vector3(lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t));
 }
 
+public int sign(float x){
+    return x >= 0 ? x==0 ? 0 : 1 : -1;
+}
+
 public float clamp(float a) {
     return max( min(a, 1.0), 0.0);
 }
@@ -98,7 +102,7 @@ public float biasFunction(float x, float bias) {
 
 
 public float smoothMin(float a, float b, float k) {
-     k = max(0, k);
+    k = max(0, k);
     float h = max(0, min(1, (b - a + k) / (2 * k)));
     return a * h + b * (1 - h) - k * h * (1 - h);
 }
@@ -118,6 +122,21 @@ void intergerToRGB(int pixel) {
     float r = (pixel & R_MASK)>>16;
     float g = (pixel & G_MASK)>>8;
     float b = pixel & B_MASK;
+
+    println(r, g, b);
+}
+
+public FloatBuffer toFloatBuffer(Matrix4 m) {
+    FloatBuffer result;
+    result = allocateDirectFloatBuffer(16);
+    float[] data = new float[]{m.m[0], m.m[1], m.m[2], m.m[3],
+                               m.m[4], m.m[5], m.m[6], m.m[7],
+                               m.m[8], m.m[9], m.m[10],m.m[11],
+                               m.m[12],m.m[13],m.m[14],m.m[15]};
+
+    result.rewind();
+    result.put(data);
+    result.rewind();
     
-    println(r,g,b);
+    return result;
 }

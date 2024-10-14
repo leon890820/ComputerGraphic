@@ -4,7 +4,7 @@ public abstract class GameObject {
     Mesh mesh;
     Material material;
     MeshRenderer meshRenderer;
-
+    boolean[] hasProperties = new boolean[4];
 
     public GameObject() {
         transform = new Transform();
@@ -76,15 +76,33 @@ public abstract class GameObject {
         name = s;
         return this;
     }
+    
+    public float[] getTrianglePosition(){
+        return mesh.getTrianglePosition();
+    }
+    public float[] getTriangleNormal(){
+        return mesh.getTriangleNormal();
+    }
+    public float[] getTriangleUV(){
+        return mesh.getTriangleUV();
+    }
+    public float[] getTriangleTangent(){
+        return mesh.getTriangleTangent();
+    }
+    
+    public int getNumber(){
+        return mesh.triangles.size();
+    }
 
 
     public void update() {
     }
     public void run() {
-
         meshRenderer.render();
-    };
-
+    }
+    public void debugRun() {
+        meshRenderer.debugRender();
+    }
 
 
     public Matrix4 localToWorld() {
@@ -100,9 +118,14 @@ public abstract class GameObject {
         return Matrix4.Scale(scale.inv()).mult(Matrix4.RotZ(-eular.z)).mult(Matrix4.RotX(-eular.x)).mult(Matrix4.RotY(-eular.y)).mult(Matrix4.Trans(pos.mult(-1)));
     }
     public Vector3 forward() {
-        Vector3 eular = getEular();
-        return (Matrix4.RotZ(eular.z).mult(Matrix4.RotX(eular.y)).mult(Matrix4.RotY(eular.x)).zAxis()).mult(-1);
+        return localToWorld().mult(new Vector3(0, 0, -1));
     }
+    public Vector3 right() {
+        return localToWorld().mult(new Vector3(1, 0, 0));
+    }
+
+    
+
     public Matrix4 MVP() {
         return main_camera.Matrix().mult(localToWorld());
     }
@@ -118,6 +141,32 @@ public class PhongObject extends GameObject {
 
     public PhongObject(String name, Material mat) {
         mesh = new Mesh(name);
+        hasProperties = mesh.hasProperties;
+        material = mat.setGameobject(this);
+        meshRenderer = new MeshRenderer(mesh, material,this);
+    }
+}
+
+public class Quad extends GameObject{
+    
+    public Quad(String name, Material mat) {
+        mesh = new Mesh(name);
+        hasProperties = mesh.hasProperties;
+        material = mat.setGameobject(this);
+        meshRenderer = new MeshRenderer(mesh, material,this);
+    }
+
+}
+
+
+public class PortalObject extends GameObject {
+
+    public PortalObject() {
+    }
+
+    public PortalObject(String name, Material mat) {
+        mesh = new Mesh(name);
+        hasProperties = mesh.hasProperties;
         material = mat.setGameobject(this);
         meshRenderer = new MeshRenderer(mesh, material,this);
     }

@@ -5,6 +5,7 @@ class Mesh {
     ArrayList<Vector3> normals=new ArrayList<Vector3>();
     ArrayList<Vector3> tangents=new ArrayList<Vector3>();
     ArrayList<Triangle> triangles=new ArrayList<Triangle>();
+    boolean[] hasProperties = new boolean[4];
 
     public Mesh(){}
     
@@ -154,7 +155,10 @@ class Mesh {
                 }
             }
         }
-        reCaculateNormal();
+        hasProperties[0] = true; hasProperties[1] = true;
+        if(uvs.size() > 0)  hasProperties[2] = true;
+        if(tangents.size() > 0)  hasProperties[3] = true;
+        //reCaculateNormal();
     }
 
     
@@ -202,9 +206,9 @@ class Mesh {
         int[] n_ix={an, bn, cn};
         Vector3[] vs = {verts.get(a),  verts.get(b) , verts.get(c)};
         Vector3 n = Vector3.cross(vs[1].sub(vs[0]),vs[2].sub(vs[0])).unit_vector();
-
         
-        Vector3[] normal = n_ix[0] == -1 ? new Vector3[]{n,n,n} : new Vector3[]{normals.get(an), normals.get(bn), normals.get(cn)};
+        //Vector3[] normal = n_ix[0] == -1 ? new Vector3[]{n,n,n} : new Vector3[]{normals.get(an), normals.get(bn), normals.get(cn)};
+        Vector3[] normal = {n,n,n};
         Vector3[] us;
         if(at >= uvs.size() || bt >= uvs.size() || ct >= uvs.size()){
             us = new Vector3[]{new Vector3(0),new Vector3(0),new Vector3(0)};
@@ -240,7 +244,6 @@ class Mesh {
                 v[i * 9 + j * 3 + 2] = tri.normal[j].z;
             }
         }
-        
         return v;
     }
     

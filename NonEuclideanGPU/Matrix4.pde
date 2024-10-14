@@ -185,6 +185,8 @@ public static class Matrix4{
   }
   
   
+  
+  
   public Matrix4 transposed(){
     Matrix4 out=new Matrix4();
     out.m[0]  = m[0]; out.m[1]  = m[4]; out.m[2]  = m[8];  out.m[3]  = m[12];

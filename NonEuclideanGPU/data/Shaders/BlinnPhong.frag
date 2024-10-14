@@ -12,7 +12,6 @@ uniform vec3 view_pos;
 
 in vec3 vertNormal;
 in vec3 worldVertex;
-in float depth;
 
 layout(location = 0) out vec4 fragColor;
 
