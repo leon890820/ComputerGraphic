@@ -59,8 +59,7 @@ class Level1 extends Scene{
         objs.forEach(GameObject::run);
         portal1.run();
         portal2.run();
-        collider1.debugRun();
-        collider2.debugRun();
+
         
         
         boolean collideEnter1 = collider1.collide(player.transform.position);

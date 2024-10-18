@@ -17,7 +17,7 @@ static int GH_SCREEN_X = 50;
 static int GH_SCREEN_Y = 50;
 static float GH_FOV = 30.0f;
 static float GH_NEAR_MIN = 1e-3f;
-static float GH_NEAR_MAX = 1e-2f;
+static float GH_NEAR_MAX = 1e-1f;
 static float GH_FAR = 1000.0f;
 static float GH_MIN_CLIPPING=0.1f;
 static int GH_FBO_SIZE = 2048;
@@ -26,7 +26,7 @@ static int GH_MAX_RECURSION = 4;
 //Gameplay
 static float GH_MOUSE_SENSITIVITY = 0.01f;
 static float GH_MOUSE_SMOOTH = 0.5f;
-static float GH_WALK_SPEED = 0.08f;
+static float GH_WALK_SPEED = 0.32f;
 static float GH_WALK_ACCEL = 50.0f;
 static float GH_BOB_FREQ = 8.0f;
 static float GH_BOB_OFFS = 0.015f;
@@ -42,20 +42,23 @@ static Vector3 AMBIENT_LIGHT = new Vector3(0.3, 0.3, 0.3);
 boolean[] key_input={false, false, false, false};
 
 Camera main_camera;
-Camera cam1;
-Camera cam2;
-Camera cam3;
-Player player;
-
 Light main_light;
-Level1 level1;
+World world;
 
+Texture blockTexture;
+PhongMaterial phongMaterial;
+
+   
 PJOGL pgl;
 GL2ES2 gl;
 GL3 gl3;
 
-float a = -0.5;
+
+
+
+float a = 0.5;
 float time = 0.0;
+
 
 
 
@@ -66,11 +69,10 @@ void setup() {
     pgl = (PJOGL) beginPGL();  
     gl = pgl.gl.getGL2ES2();
     gl3 = ((PJOGL)beginPGL()).gl.getGL3();
-    
-
 
     lightSetting();
     cameraSetting();
+    setMaterial();
     initSetting();
 
 }
@@ -78,13 +80,15 @@ void setup() {
 
 void draw() {
     
-    player.move();   
+    move();   
 
     background(0);
-    level1.run();
-        
+    world.run();
+    
     main_light.setLightdirection(200 * cos(a), -200 ,200 * sin(a) );
-  
+
+
+    
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
 }
@@ -92,29 +96,27 @@ void draw() {
 
 
 public void initSetting() {
-    level1 = new Level1();
+    setGameObject();
+}
+
+void setGameObject() {
+    //println(new ChunkCoord(-1,-1).add(-1, 0));
+    world = new World();
+}
+
+void setMaterial() {  
+    blockTexture = new Texture("Textures/Blocks.png");
+    blockTexture.setSamplingMode(2);
+       
+    phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
+    phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5).setTexture(blockTexture);
 }
 
 
-
-
 public void cameraSetting() {
-    player = new Player();
-    player.setPosition(0.0, 10.0, 20.0).setEular(-0.0, 0.0, 0.0);
-    
-    cam1 = new Camera();
-    cam1.setPosition(0.0, 10.0, 20.0).setEular(-0.0, 0.0, 0.0);
-    cam1.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
-    
-    cam2 = new Camera();
-    cam2.setPosition(-12.0, 10.0 , 20.0).setEular(-0.0, 0.0, 0.0);
-    cam2.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
-    
-    cam3 = new Camera();
-    cam3.setPosition(12.0, 10.0 , 20.0).setEular(-0.0, 0.0, 0.0);
-    cam3.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
-    
-    //main_camera = cam2;
+    main_camera = new Camera();
+    main_camera.setPosition(0.0, 80.0, 5.0).setEular(-PI / 4, 0.0, 0.0);
+    main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 
 public void lightSetting() {
@@ -153,4 +155,25 @@ void keyReleased() {
     if (key=='D'||key=='d') {
         key_input[3]=false;
     }
+}
+
+void move() {
+    if (mousePressed) {
+        if (mouseButton == RIGHT) {
+            float dx = (pmouseX - mouseX) * GH_MOUSE_SENSITIVITY;
+            float dy = (pmouseY - mouseY) * GH_MOUSE_SENSITIVITY;
+            main_camera.transform.eular.set(main_camera.transform.eular.x + dy, main_camera.transform.eular.y + dx, 0.0);
+        }
+    }
+
+    Vector3 forward = main_camera.localToWorld().mult(new Vector3(0, 0, -1));
+    Vector3 right = main_camera.localToWorld().mult(new Vector3(1, 0, 0));
+
+    float wx = key_input[3] ? 1.0 * GH_WALK_SPEED : key_input[1] ? -1.0 * GH_WALK_SPEED : 0.0;
+    float wz = key_input[0] ? 1.0 * GH_WALK_SPEED : key_input[2] ? -1.0 * GH_WALK_SPEED: 0.0;
+
+    Vector3 mv = forward.mult(wz).add(right.mult(wx));
+    main_camera.transform.position = main_camera.transform.position.add(mv);
+
+    main_camera.update();
 }
