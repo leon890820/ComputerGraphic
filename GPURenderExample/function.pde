@@ -121,3 +121,17 @@ void intergerToRGB(int pixel) {
     
     println(r,g,b);
 }
+
+public FloatBuffer toFloatBuffer(Matrix4 m) {
+    FloatBuffer result;
+    result = allocateDirectFloatBuffer(16);
+    float[] data = new float[]{m.m[0], m.m[1], m.m[2], m.m[3],
+                               m.m[4], m.m[5], m.m[6], m.m[7],
+                               m.m[8], m.m[9], m.m[10],m.m[11],
+                               m.m[12],m.m[13],m.m[14],m.m[15]};
+    result.rewind();
+    result.put(data);
+    result.rewind();
+    
+    return result;
+}

@@ -54,7 +54,7 @@ GL3 gl3;
 
 
 
-float a = PI / 2;
+float a = -PI/4;
 float time = 0.0;
 
 
@@ -83,8 +83,7 @@ void draw() {
     background(0);
     pekora.run();
     
-    main_light.setLightdirection(0, 200 * sin(a), 200 * cos(a));
-
+    main_light.setLightdirection(200 * cos(a), -200 ,200 * sin(a) );    
 
 
     
