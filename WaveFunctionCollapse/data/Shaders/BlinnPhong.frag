@@ -26,11 +26,11 @@ void main() {
   vec3 normal = normalize(vertNormal);
   vec3 ambient = albedo * 0.7;
   vec3 ld = normalize(-light_dir);
-  vec3 diffuse = 0.2 * light_color * max(0.0, dot( normal , ld ));
+  vec3 diffuse = 0.7 * light_color * max(0.0, dot( normal , ld ));
 
   vec3 view_dir = normalize(view_pos - worldVertex);
   vec3 h = normalize(ld + view_dir);
-  vec3 specular = 0.2 * light_color * pow(max(0.0,dot(normal , h)),64);
+  vec3 specular = 0.3 * light_color * pow(max(0.0,dot(normal , h)),64);
 
   color = ambient + (diffuse + specular);
 
