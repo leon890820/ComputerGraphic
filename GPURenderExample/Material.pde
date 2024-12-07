@@ -30,6 +30,19 @@ public abstract class Material {
         int location = gl3.glGetUniformLocation(shader.glProgram, s);
         gl3.glUniform3f(location, x, y, z);
     }
+    void setVector2ToUniform(String s, float x, float y) {
+        int location = gl3.glGetUniformLocation(shader.glProgram, s);
+        gl3.glUniform2f(location, x, y);
+    }
+    
+    void setFloatToUniform(String s, float x) {
+        int location = gl3.glGetUniformLocation(shader.glProgram, s);
+        gl3.glUniform1f(location, x);
+    }
+    void setIntToUniform(String s, int x) {
+        int location = gl3.glGetUniformLocation(shader.glProgram, s);
+        gl3.glUniform1i(location, x);
+    }
 
     abstract void run(GameObject go);
 }
