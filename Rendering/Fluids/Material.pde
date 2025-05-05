@@ -88,10 +88,34 @@ public class PhongMaterial extends Material {
 
 
     public void run(GameObject go) {
-
         setGameobject(go);
         setMatrix4ToUniform("MVP", gameobject.MVP().transposed());
         setVector3ToUniform("albedo", albedo.x, albedo.y, albedo.z);
+    }
+}
+
+public class FluidMaterial extends PhongMaterial {
+    Vector3 albedo = new Vector3(0.0);
+    Matrix4 light_MVP;
+    Texture texture;
+
+
+
+    public FluidMaterial(String frag) {
+        super(frag);
+    }
+    public FluidMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+
+  
+    @Override
+    public void run(GameObject go) {
+        Fluid fluid = (Fluid)go;
+        setGameobject(go);
+        setMatrix4ToUniform("MVP", gameobject.MVP().transposed());
+        setVector3ToUniform("albedo", albedo.x, albedo.y, albedo.z);
+        setVector3ToUniform("velosity", fluid.velosity.x, fluid.velosity.y, fluid.velosity.z);
 
     }
 }

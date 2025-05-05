@@ -139,3 +139,10 @@ public FloatBuffer toFloatBuffer(Matrix4 m) {
     
     return result;
 }
+
+
+public int[] positionToCellCoord(Vector3 point){
+    int cx = floor(point.x) + int(boundSize.x * 0.5) ;
+    int cy = floor(point.y) + int(boundSize.y * 0.5) ;
+    return new int[]{cx, cy};
+}

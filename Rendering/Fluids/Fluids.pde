@@ -2,6 +2,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.*;
 
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL2ES2;
@@ -36,7 +37,7 @@ static float GH_DT = 0.01f;
 static int GH_MAX_STEPS = 30;
 static float GH_PLAYER_HEIGHT = 1.5f;
 static float GH_PLAYER_RADIUS = 0.2f;
-static float GH_GRAVITY = -0.0f;
+static float GH_GRAVITY = 0.0f;
 static Vector3 AMBIENT_LIGHT = new Vector3(0.3, 0.3, 0.3);
 
 boolean[] key_input={false, false, false, false};
@@ -46,7 +47,9 @@ Light main_light;
 
 FBO fluidTarget;
 Icosahedron[] fluids;
+ArrayList<Icosahedron>[][] fluidsCell;
 PhongMaterial phongMaterial;
+FluidMaterial fluidMaterial;
 
 FBO densityTarget;
 Quad densityScene;
@@ -63,7 +66,7 @@ GL2ES2 gl;
 GL3 gl3;
 
 
-int fluid_num = 16;
+int fluid_num = 22;
 float a = -PI/4;
 float time = 0.0;
 float dt;
@@ -71,14 +74,17 @@ float damp = 0.95;
 float kernelRadius = 0.5;
 float pressureMutiplyer = 80.0;
 float targetDensity = 10.0;
+float viscosityStrength = 0.5;
 
-Vector3 boundSize = new Vector3(20, 10, 0);
+
+
+Vector3 boundSize = new Vector3(30, 16, 0);
 Boundary boundary;
 
 void setup() {
     size(900, 900, P3D);
     //randomSeed(0);
-
+    
     pgl = (PJOGL) beginPGL();
     gl = pgl.gl.getGL2ES2();
     gl3 = ((PJOGL)beginPGL()).gl.getGL3();
@@ -89,6 +95,7 @@ void setup() {
     initSetting();
 
     dt = 1.0/60.0;
+
 }
 
 
@@ -98,19 +105,22 @@ void draw() {
     background(0);
     //gl3.glClearColor(0.0,0.0,0.0,0.0);
    // fluidTarget.bindFrameBuffer();
+   
     main_light.setLightdirection(200 * cos(a), -200, 200 * sin(a) );
+    
+    updateFluidCell();
+
     for (Icosahedron fluid : fluids) {
         fluid.velosity = fluid.velosity.add(new Vector3(0,GH_GRAVITY,0).mult(dt));
         fluid.density = fluid.calculateDensity();
     }
     for (Icosahedron fluid : fluids) {
-        fluid.force = fluid.calculatePressureForce();
+        fluid.force = fluid.calculatePressureForce().add(fluid.calculateViscosityForce());
     }
     for (Icosahedron fluid : fluids) {
         fluid.run();
     }
-    
-    
+        
     boundary.debugRun();
     //gl3.glClearColor(0.0,0.0,0.0,1.0);
     
@@ -127,6 +137,22 @@ void draw() {
 
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
+    
+
+}
+
+
+public void updateFluidCell(){
+    for(int i = 0; i < fluidsCell.length; i++) for(int j = 0; j < fluidsCell[0].length; j++){
+        fluidsCell[i][j].clear();
+    }
+    
+    for(Icosahedron fluid : fluids){
+        int[] pos = positionToCellCoord(fluid.transform.position);
+
+        fluidsCell[pos[1]][pos[0]].add(fluid);
+    }
+
 }
 
 public float[] getFluidData(){
@@ -151,7 +177,7 @@ void setGameObject() {
     int count = 0;
     for (int y = -fluid_num; y <= fluid_num; y++) {
         for (int x = -fluid_num; x <= fluid_num; x++) {
-            fluids[count] = new Icosahedron(phongMaterial, 0.1, 5);
+            fluids[count] = new Icosahedron(fluidMaterial, 0.1, 5);
             fluids[count++].setPosition(x * 0.2,y * 0.2, 0);
         }
     }
@@ -161,6 +187,11 @@ void setGameObject() {
     densityScene = new Quad(densityMaterial);
 
     propertyScene = new Quad(propertyMaterial);
+    
+    fluidsCell = new ArrayList[(int)boundSize.y][(int)boundSize.x];
+    for(int i = 0; i < fluidsCell.length; i++) for(int j = 0; j < fluidsCell[0].length; j++){
+        fluidsCell[i][j] = new ArrayList<Icosahedron>();
+    }
 }
 
 void setMaterial() {
@@ -168,6 +199,9 @@ void setMaterial() {
 
     phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial.setAlbedo(0.9, 0.9, 0.9);   
+    
+    fluidMaterial = new FluidMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
+    fluidMaterial.setAlbedo(0.9, 0.9, 0.9);
     
     densityTarget = new FBO(width,height,1,gl3.GL_LINEAR);
     densityMaterial = new DensityMaterial("Shaders/density.frag", "Shaders/density.vert");
