@@ -26,8 +26,7 @@
 
 ### Real-Time RayTracing
 
-<img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2toaXYxdjZhN2ZpNTBzem13ZWt3M2Z4MjFpM3Q5c3plaGFsZTdlZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/HnWaXMKaJrcAqk9NXZ/giphy.gif" width = 400>
-
+<img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2toaXYxdjZhN2ZpNTBzem13ZWt3M2Z4MjFpM3Q5c3plaGFsZTdlZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/HnWaXMKaJrcAqk9NXZ/giphy.gif" width = 400><img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2s0bG5qeTh4bnZjbXk5M2Q4bWRvYmM0M2hoYW9vcjUxd3RldW50NCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/AI48Hhr73RMatZEf6I/giphy.gif" width = 400>
 
 
 ### ScreenSpaceReflect
