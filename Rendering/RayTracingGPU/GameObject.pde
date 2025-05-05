@@ -146,6 +146,96 @@ public class PhongObject extends GameObject {
     }
 }
 
+public class RayTracingObject extends GameObject {
+
+    BoundingVolumeHierarchy BVH;
+    ArrayList<Node> nodes = new ArrayList<Node>();
+    ArrayList<Triangle> BVHTriangles = new ArrayList<Triangle>();
+    
+    public RayTracingObject() {
+    }
+
+    public RayTracingObject(String name, Material mat,int depth) {
+        mesh = new Mesh(name);
+        hasProperties = new boolean[]{true,true,false,false};
+        material = mat.setGameobject(this);
+        meshRenderer = new MeshRenderer(mesh, material, this);
+        
+        BVH = new BoundingVolumeHierarchy(mesh.triangles,depth);
+        BVHRecord record = new BVHRecord();
+        BVH.calcAverage(record,0);
+        record.calcAverageTriangles();
+        println(record);
+        
+        setNodeData();
+        
+        //for(Node n : nodes){
+        //    println(n);
+        //}
+        //println(BVHTriangles.size());
+    }
+    
+    public float[] getNodeData(){
+        FloatList result = new FloatList();
+        for(Node n : nodes){
+            result.append(n.getNodeData());
+        }
+        return result.toArray();
+    }
+    
+    void setNodeData(){
+        ArrayList<BoundingVolumeHierarchy> stack = new ArrayList<BoundingVolumeHierarchy>();
+        stack.add(BVH);
+        int count = 0;
+        while(stack.size() > 0){            
+            BoundingVolumeHierarchy bvh = stack.remove(0);     
+            int leftChildIndex = 0;
+            int rightChildIndex = 0;
+            int triIndex = 0;
+            if(bvh.childA != null){
+                stack.add(bvh.childA);
+                stack.add(bvh.childB);
+                leftChildIndex = count + 1;
+                rightChildIndex = count + 2;
+                count += 2;
+            }else{
+                triIndex = BVHTriangles.size();
+                for(Triangle tri : bvh.triangles){
+                    BVHTriangles.add(tri);
+                }
+            }
+                        
+            Node node = new Node(bvh.minB, bvh.maxB, triIndex, bvh.triangles.size(),leftChildIndex , rightChildIndex);
+            nodes.add(node);
+        }
+    
+    }
+    
+    
+    public float[] getMeshTriangleData(){
+        FloatList data = new FloatList();
+        
+        for(int i = 0; i < mesh.triangles.size(); i++){
+            float[] d = getTriangleData(mesh.triangles.get(i).verts, 0, new Vector3(0.48, 0.83, 0.53), 0.0, 0.0);
+            data.append(d);
+        }
+        
+        return data.toArray();
+    }
+    
+    public float[] getBVHTriangleData(){
+        FloatList data = new FloatList();
+        
+        for(Triangle triangle : BVHTriangles){
+            float[] d = getTriangleData(triangle.verts, 0, new Vector3(0.48, 0.83, 0.53), 0.0, 0.0);
+            data.append(d);
+        }
+        
+        return data.toArray();
+    }
+    
+    
+}
 
 
 public class Quad extends GameObject {

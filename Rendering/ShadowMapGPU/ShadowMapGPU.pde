@@ -91,8 +91,8 @@ void setGameObject(){
     mona.setPos(10.0, -75.0, 20.0).setEular(PI/3, PI/4, -PI/5).setScale(50,50,50);
     
     
-    gura = new ShadowObject("Meshes/ina.obj", shadowMaterial);
-    gura.setPos(00.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(0.5,0.5,0.5);
+    gura = new ShadowObject("Meshes/pekora.obj", shadowMaterial);
+    gura.setPos(00.0, -75.0, 0.0).setEular(0.0, 0.0, 0.0).setScale(50,50,50);
 
     floor = new ShadowObject("Meshes/ground.obj", shadowMaterial);
     floor.setPos(0.0, -75.0, 0.0).setScale(400, 1, 400);
@@ -107,7 +107,7 @@ public void cameraSetting() {
 }
 
 public void lightSetting() {
-    main_light = new Light(new Vector3(200*cos(a), 200, 200*sin(a)), new Vector3(-1.0, -1.0, -1.0), new Vector3(0.8));
+    main_light = new Light(new Vector3(100*cos(a), 200, 100*sin(a)), new Vector3(-1.0, -1.0, -1.0), new Vector3(0.8));
     main_light.setShape("Meshes/cube.obj").setMaterial(phongMaterial1).setScale(2,2,2);
     
 }
@@ -116,9 +116,9 @@ void draw() {
 
     background(0);
     lights();
-    main_light.setPos(200*cos(a*3), 100 + 50*sin(a*2), 200*sin(a*5));
+    main_light.setPos(-200*cos(a*3), 200 + 50*sin(a*2), -200*sin(a*5));
     main_light.setLightdirection(main_light.pos.mult(-1).unit_vector());
-    //a+=0.003;
+    a+=0.003;
     
     move();
     render();

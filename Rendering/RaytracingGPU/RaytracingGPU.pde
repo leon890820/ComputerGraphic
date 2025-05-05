@@ -53,6 +53,9 @@ Texture whiteNoise;
 QuadMaterial finaMaterial;
 Quad finalScene;
 
+RayTracingObject knight;
+RayTracingObject dragon;
+
 PJOGL pgl;
 GL3ES3 gl;
 GL3 gl3;
@@ -65,10 +68,11 @@ float time = 0.0;
 
 int count = 0;
 
+
 void setup() {
     size(900, 900, P3D);
     randomSeed(0);
-
+    
     pgl = (PJOGL) beginPGL();
     gl = pgl.gl.getGL3ES3();
     gl3 = ((PJOGL)beginPGL()).gl.getGL3();
@@ -82,10 +86,7 @@ void setup() {
     //println(gl3.glGetString(gl3.GL_VERSION));
 }
 
-float[] data = new float[]{1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-    1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-    1.0, 0.0, 1.0, 0.0, 0.1, 1.0, 0.0, 0.0,
-    1.0, 1.0, 1.0, 0.0, 0.5, 1.0, 1.0, 0.0};
+
 
 
 
@@ -121,7 +122,7 @@ void draw() {
 
 
 public void initSetting() {
-    setScence(2);
+    setScence(3);
     setGameObject();
 }
 
@@ -157,6 +158,18 @@ void setScence(int i){
         rayTracingMaterial.setDark(true);
         ssbo_triangle = new SSBO(0, rayTracingMaterial, getFinalScenceData());
         ssbo_circle = new SSBO(1, rayTracingMaterial, getFinalScenceData1());
+    }else if(i == 3){
+        rayTracingMaterial.setDark(false);
+        //knight = new RayTracingObject("Meshes/Knight", rayTracingMaterial,15);
+        dragon = new RayTracingObject("Meshes/Dragon_8K", rayTracingMaterial,15);
+        
+
+        
+        ssbo_triangle = new SSBO(0, rayTracingMaterial, dragon.getBVHTriangleData());
+        SSBO ssbo_node = new SSBO(2, rayTracingMaterial, dragon.getNodeData());
+        
+
+        
     }
 
 }
@@ -164,7 +177,7 @@ void setScence(int i){
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPosition(5.0, 5.0, 5.0).setEular(-0.2, 0.5, 0.0);
+    main_camera.setPosition(2.0, 0.0, 0.0).setEular(0.0, 1.57, 0.0);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 

@@ -174,6 +174,15 @@ struct Sphere{
     Material mat;
 };
 
+struct Node{
+    vec3 minB;
+    float triangleIndex;
+    vec3 maxB;   
+    float triangleSize;
+    float childAIndex;
+    float childBIndex;
+};
+
 
 layout (std430,binding = 0) buffer SSBO_TriangleData{
     Triangle triangle[];
@@ -184,7 +193,30 @@ layout (std430,binding = 1) buffer SSBO_SphereData{
     Sphere sphere[];
 };
 
+layout (std430,binding = 2) buffer SSBO_NodeData{
+    Node nodes[];
+};
 
+bool rayBoundingBox(vec3 o,vec3 dir, vec3 minB, vec3 maxB){
+    vec3 inv_dir = 1.0 / dir;
+       
+    vec3 mint = (minB - o) * inv_dir;
+    vec3 maxt = (maxB - o) * inv_dir;
+       
+    vec3 mmit = vec3(mint.x < maxt.x? mint.x : maxt.x , mint.y < maxt.y? mint.y : maxt.y , mint.z < maxt.z? mint.z : maxt.z);
+    vec3 mmat = vec3(mint.x >= maxt.x? mint.x : maxt.x , mint.y >= maxt.y? mint.y : maxt.y , mint.z >= maxt.z? mint.z : maxt.z);
+        
+    float enter = max(mmit.x,max(mmit.y,mmit.z));
+    float exit = min(mmat.x,min(mmat.y,mmat.z));
+
+        
+    if(enter < exit && exit >= 0) {
+        return true;
+    }
+    return false;
+
+        
+}
 
 
 vec3 reflect(vec3 v, vec3 n) {
@@ -263,7 +295,7 @@ bool rayTriangle(Ray ray, Triangle tri,float min_r, float max_r,inout HitRecord 
     if(b1 < 0.0 || b1 > 1.0 || b2 < 0.0 || b2 > 1.0 || b0 < 0.0 || b1 > 1.0) return false;
     record.pos = ray.at(t);
     record.t = t;
-    vec3 normal = cross(e1, e2);
+    vec3 normal = normalize(cross(e1, e2));
     record.set_face_normal(ray , normal);   
     record.mat = tri.mat;
     
@@ -294,6 +326,32 @@ bool raySphere(Ray ray, Sphere s,float min_r, float max_r,inout HitRecord record
     return false;
 }
 
+void rayBVHTriangle(Ray ray, Node n,float min_r, float max_r,inout HitRecord record){
+    Node nodeStack[30];
+    int stackCount = 0;
+    nodeStack[stackCount++] = n;
+    float min_drecord = max_r;
+
+
+    while(stackCount > 0){
+        Node node = nodeStack[--stackCount];
+
+        if(rayBoundingBox(ray.origin, ray.dir,node.minB, node.maxB)){
+            if(node.childAIndex == 0){
+                for(int i = 0; i < int(node.triangleSize); i++){
+                    if(rayTriangle(ray, triangle[int(node.triangleIndex) + i], min_r, min_drecord, record)){
+                        min_drecord = record.t;
+                    }
+                }
+            }else{
+                nodeStack[stackCount++] = nodes[int(node.childBIndex)];
+                nodeStack[stackCount++] = nodes[int(node.childAIndex)];
+            }
+        }
+    }
+
+}
+
 
 vec3 rayColor(Ray ray, inout HitRecord record){ 
     vec3 color = vec3(1.0);
@@ -310,11 +368,13 @@ vec3 rayColor(Ray ray, inout HitRecord record){
                 min_drecord = record.t;
             }
         }
-        for(int i = 0; i < triangle.length(); i++){
-            if(rayTriangle(ray , triangle[i] , 0.001 , min_drecord , record)){
-                min_drecord = record.t;
-            }
-        }
+        // for(int i = 0; i < triangle.length(); i++){
+        //     if(rayTriangle(ray , triangle[i] , 0.001 , min_drecord , record)){
+        //         min_drecord = record.t;
+        //     }
+        // }
+        rayBVHTriangle(ray, nodes[0], 0.001, min_drecord, record);
+
         if(record.t > 0) {        
             if(scatter(ray , record)){
                 color *= record.albedo;
@@ -357,7 +417,6 @@ void main() {
     }
     color /= sampleNum;
     color = (color + lastColor * rbias) / (rbias + 1);
-
 
 
     fragColor = vec4(color , 1.0);

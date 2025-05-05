@@ -130,7 +130,7 @@ public class RayTracingMaterial extends Material {
     Texture lastFrame = new Texture(1,1);
     Vector3 camPos = new Vector3(0,0,0);
     Texture earth = new Texture(1,1);
-    boolean dark = false;
+    boolean dark = true;
 
     public RayTracingMaterial(String frag) {
         super(frag);

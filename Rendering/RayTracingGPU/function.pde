@@ -169,7 +169,7 @@ public float[] getCubeData(Vector3 center, Vector3 size) {
 }
 public float[] getSphereData(Vector3 center, float r, int type, Vector3 albedo, float fuzz, float refraction_index) {
     float[] data = new float[]{center.x, center.y, center.z, r,
-                               type, 0.0, 0.0, 0.0,
+                               type, 0.0, 0.0, 0.0, // material
                                albedo.x, albedo.y, albedo.z, fuzz,
                                refraction_index, 0.0, 0.0, 0.0};
     return data;
@@ -177,10 +177,20 @@ public float[] getSphereData(Vector3 center, float r, int type, Vector3 albedo, 
 
 public float[] getTriangleData(Vector3[] T, int type, Vector3 albedo, float fuzz, float refraction_index) {
     float[] data = new float[]{T[0].x, T[0].y, T[0].z, 0.0,
-        T[1].x, T[1].y, T[1].z, 0.0,
-        T[2].x, T[2].y, T[2].z, 0.0,
-        type, 0.0, 0.0, 0.0,
-        albedo.x, albedo.y, albedo.z, fuzz,
-        refraction_index, 0.0, 0.0, 0.0};
+                               T[1].x, T[1].y, T[1].z, 0.0,
+                               T[2].x, T[2].y, T[2].z, 0.0,
+                               type, 0.0, 0.0, 0.0, // material
+                               albedo.x, albedo.y, albedo.z, fuzz,
+                               refraction_index, 0.0, 0.0, 0.0};
     return data;
+}
+
+
+
+public Vector3 getAverageTriangleCenter(ArrayList<Triangle> triangles){
+    Vector3 center = new Vector3();
+    for(Triangle triangle : triangles){
+        center = center.add(triangle.getCenter());
+    }
+    return center.mult(1.0 / (float)triangles.size());
 }

@@ -345,6 +345,10 @@ class Triangle {
         center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0/3.0);
     }
     
+    public Vector3 getCenter(){
+        return (verts[0].add(verts[1]).add(verts[2])).mult(1.0/3.0);
+    }
+    
     public void caculateTangent(){
         tangents = new Vector3[3];
         for(int i = 0; i < tangents.length; i++){
