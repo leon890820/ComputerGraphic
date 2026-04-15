@@ -13,7 +13,6 @@ class Mesh {
 
     String mtllibName = null;
     LinkedHashMap<String, MtlMaterial> mtlMaterials = new LinkedHashMap<String, MtlMaterial>();
-    LinkedHashMap<String, Texture> textureKaMap = new LinkedHashMap<String, Texture>();
     String objBasePath = null;
 
     public Mesh() {
@@ -73,7 +72,8 @@ class Mesh {
         reCaculateNormal();
         releaseSourceData();
 
-        loadTextureKaMaps();
+        // 改成直接把 texture 指派到 submesh
+        assignTexturesToSubMeshes();
     }
 
     //========================
@@ -234,26 +234,27 @@ class Mesh {
     }
 
     //========================
-    // Texture loading (only map_Ka)
+    // Texture loading (map_Ka -> SubMesh.textureKa)
     //========================
-    private void loadTextureKaMaps() {
-        textureKaMap.clear();
+    private void assignTexturesToSubMeshes() {
+        if (subMeshes == null || subMeshes.size() == 0) return;
+        if (mtlMaterials == null || mtlMaterials.size() == 0) return;
 
-        if (mtlMaterials == null || mtlMaterials.size() == 0) {
-            return;
-        }
+        for (String name : subMeshes.keySet()) {
+            SubMesh sub = subMeshes.get(name);
+            MtlMaterial m = mtlMaterials.get(name);
 
-        for (String materialName : mtlMaterials.keySet()) {
-            MtlMaterial m = mtlMaterials.get(materialName);
-            if (m == null) continue;
-            if (m.mapKa == null || m.mapKa.length() == 0) continue;
+            if (sub == null || m == null) continue;
 
-            Texture tex = loadTextureByRelativePath(m.mapKa);
-            if (tex != null) {
-                textureKaMap.put(materialName, tex);
-                println("[Mesh] loaded map_Ka texture: material = " + materialName + ", file = " + m.mapKa);
-            } else {
-                println("[Mesh] failed to load map_Ka texture: material = " + materialName + ", file = " + m.mapKa);
+            if (m.mapKa != null && m.mapKa.trim().length() > 0) {
+                Texture tex = loadTextureByRelativePath(m.mapKa);
+                sub.textureKa = tex;
+
+                if (tex != null) {
+                    println("[Mesh] assigned map_Ka texture to submesh: material = " + name + ", file = " + m.mapKa);
+                } else {
+                    println("[Mesh] failed assigning map_Ka texture to submesh: material = " + name + ", file = " + m.mapKa);
+                }
             }
         }
     }
@@ -274,18 +275,11 @@ class Mesh {
         }
     }
 
-    public Texture getTextureKa(String materialName) {
-        return textureKaMap.get(materialName);
-    }
-
-    public boolean hasTextureKa(String materialName) {
-        return textureKaMap.containsKey(materialName);
-    }
-
     public void printTextureKaInfo() {
-        println("map_Ka texture count = " + textureKaMap.size());
-        for (String key : textureKaMap.keySet()) {
-            println("material = " + key + ", has map_Ka texture");
+        for (String key : subMeshes.keySet()) {
+            SubMesh sub = subMeshes.get(key);
+            boolean hasTex = sub != null && sub.textureKa != null && sub.textureKa.isUploaded();
+            println("material = " + key + ", has map_Ka texture = " + hasTex);
         }
     }
 
@@ -361,114 +355,6 @@ class Mesh {
     }
 
     //========================
-    // Export all triangles
-    //========================
-    float[] getTrianglePosition() {
-        return getTrianglePosition(triangles);
-    }
-
-    float[] getTriangleNormal() {
-        return getTriangleNormal(triangles);
-    }
-
-    float[] getTriangleTangent() {
-        return getTriangleTangent(triangles);
-    }
-
-    float[] getTriangleUV() {
-        return getTriangleUV(triangles);
-    }
-
-    //========================
-    // Export single submesh
-    //========================
-    float[] getTrianglePosition(SubMesh sub) {
-        if (sub == null) return new float[0];
-        return getTrianglePosition(sub.triangles);
-    }
-
-    float[] getTriangleNormal(SubMesh sub) {
-        if (sub == null) return new float[0];
-        return getTriangleNormal(sub.triangles);
-    }
-
-    float[] getTriangleTangent(SubMesh sub) {
-        if (sub == null) return new float[0];
-        return getTriangleTangent(sub.triangles);
-    }
-
-    float[] getTriangleUV(SubMesh sub) {
-        if (sub == null) return new float[0];
-        return getTriangleUV(sub.triangles);
-    }
-
-    //========================
-    // Shared export implementation
-    //========================
-    private float[] getTrianglePosition(ArrayList<Triangle> tris) {
-        float[] v = new float[tris.size() * 9];
-        for (int i = 0; i < tris.size(); i++) {
-            Triangle tri = tris.get(i);
-            for (int j = 0; j < 3; j++) {
-                v[i * 9 + j * 3 + 0] = tri.verts[j].x;
-                v[i * 9 + j * 3 + 1] = tri.verts[j].y;
-                v[i * 9 + j * 3 + 2] = tri.verts[j].z;
-            }
-        }
-        return v;
-    }
-
-    private float[] getTriangleNormal(ArrayList<Triangle> tris) {
-        float[] v = new float[tris.size() * 9];
-        for (int i = 0; i < tris.size(); i++) {
-            Triangle tri = tris.get(i);
-            for (int j = 0; j < 3; j++) {
-                Vector3 n = (tri.normals != null && tri.normals[j] != null)
-                    ? tri.normals[j]
-                    : new Vector3(0, 1, 0);
-
-                v[i * 9 + j * 3 + 0] = n.x;
-                v[i * 9 + j * 3 + 1] = n.y;
-                v[i * 9 + j * 3 + 2] = n.z;
-            }
-        }
-        return v;
-    }
-
-    private float[] getTriangleTangent(ArrayList<Triangle> tris) {
-        float[] v = new float[tris.size() * 9];
-        for (int i = 0; i < tris.size(); i++) {
-            Triangle tri = tris.get(i);
-            for (int j = 0; j < 3; j++) {
-                Vector3 t = (tri.tangents != null && tri.tangents[j] != null)
-                    ? tri.tangents[j]
-                    : new Vector3(1, 0, 0);
-
-                v[i * 9 + j * 3 + 0] = t.x;
-                v[i * 9 + j * 3 + 1] = t.y;
-                v[i * 9 + j * 3 + 2] = t.z;
-            }
-        }
-        return v;
-    }
-
-    private float[] getTriangleUV(ArrayList<Triangle> tris) {
-        float[] v = new float[tris.size() * 6];
-        for (int i = 0; i < tris.size(); i++) {
-            Triangle tri = tris.get(i);
-            for (int j = 0; j < 3; j++) {
-                Vector3 uv = (tri.uvs != null && tri.uvs[j] != null)
-                    ? tri.uvs[j]
-                    : new Vector3(0, 0, 0);
-
-                v[i * 6 + j * 2 + 0] = uv.x;
-                v[i * 6 + j * 2 + 1] = uv.y;
-            }
-        }
-        return v;
-    }
-
-    //========================
     // Normal / tangent
     //========================
     void reCaculateNormal() {
@@ -514,101 +400,5 @@ class Mesh {
         sourceVerts = null;
         sourceUVs = null;
         sourceNormals = null;
-    }
-
-    @Override
-    public String toString() {
-        int c = 1;
-        String s = "";
-        for (Triangle t : triangles) {
-            s += "Triangle " + c++ + ":\n";
-            s += t.toString();
-        }
-        return s;
-    }
-}
-
-class SubMesh {
-    String materialName;
-    ArrayList<Triangle> triangles = new ArrayList<Triangle>();
-
-    SubMesh(String materialName) {
-        this.materialName = materialName;
-    }
-
-    @Override
-        public String toString() {
-        return "SubMesh(material=" + materialName + ", triangles=" + triangles.size() + ")";
-    }
-}
-
-class Triangle {
-    String materialName = "default";
-
-    Vector3[] verts;
-    Vector3[] uvs;
-    Vector3[] normals;
-    Vector3[] tangents;
-
-    // 保留 shared vertex index，給 smooth normal 計算用
-    int[] vertexIndices;
-
-    Vector3 center;
-
-    Triangle(Vector3[] verts, Vector3[] uvs, Vector3[] normals, int[] vertexIndices) {
-        this.verts = verts;
-        this.uvs = uvs;
-        this.normals = normals;
-        this.vertexIndices = vertexIndices;
-        this.center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0 / 3.0);
-        calculateTangent();
-    }
-
-    public void calculateTangent() {
-        tangents = new Vector3[3];
-        for (int i = 0; i < tangents.length; i++) {
-            Vector3 n = (normals != null && normals[i] != null) ? normals[i] : new Vector3(0, 1, 0);
-            tangents[i] = new Vector3(-n.z, 0.0, n.x);
-        }
-    }
-
-    public boolean intersection(Vector3 o, Vector3 dir, Matrix4 ltw) {
-        Vector3 v0 = ltw.transformPoint(verts[0]);
-        Vector3 v1 = ltw.transformPoint(verts[1]);
-        Vector3 v2 = ltw.transformPoint(verts[2]);
-
-        Vector3 e1 = Vector3.sub(v1, v0);
-        Vector3 e2 = Vector3.sub(v2, v0);
-        Vector3 s = Vector3.sub(o, v0);
-        Vector3 s1 = Vector3.cross(dir, e2);
-        Vector3 s2 = Vector3.cross(s, e1);
-        float se_inv = 1.0 / Vector3.dot(s1, e1);
-
-        float t = Vector3.dot(s2, e2) * se_inv;
-        float b1 = Vector3.dot(s1, s) * se_inv;
-        float b2 = Vector3.dot(s2, dir) * se_inv;
-
-        return b1 > 0.01 && b2 > 0.01 && 1 - b1 - b2 > 0.01 && t > 0.01;
-    }
-
-    @Override
-        public String toString() {
-        String s = "Material: " + materialName + "\n";
-
-        s += "Vertices:\n";
-        if (verts != null) {
-            for (Vector3 v : verts) {
-                s += (v == null ? "null" : v.toString()) + "\n";
-            }
-        }
-
-        s += "UVs:\n";
-        if (uvs != null) {
-            for (Vector3 v : uvs) {
-                s += (v == null ? "null" : v.toString()) + "\n";
-            }
-        }
-
-        return s;
     }
 }

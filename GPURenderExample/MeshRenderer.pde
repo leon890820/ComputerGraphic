@@ -57,7 +57,7 @@ public class MeshRenderer {
             return;
         }
 
-        positions = mesh.getTrianglePosition(subMesh);
+        positions = subMesh.getTrianglePosition();
         if (positions == null || positions.length == 0) {
             println("[MeshRenderer] initialize failed: positions is empty, subMesh = " + subMesh.materialName);
             return;
@@ -82,7 +82,7 @@ public class MeshRenderer {
 
         // Normal
         if (gameObject.hasProperties[1]) {
-            normals = mesh.getTriangleNormal(subMesh);
+            normals = subMesh.getTriangleNormal();
             if (normals != null && normals.length > 0) {
                 normalBuffer = allocateDirectFloatBuffer(normals.length);
                 setBuffer(normalBuffer, normals);
@@ -94,7 +94,7 @@ public class MeshRenderer {
 
         // UV
         if (gameObject.hasProperties[2]) {
-            uvs = mesh.getTriangleUV(subMesh);
+            uvs = subMesh.getTriangleUV();
             if (uvs != null && uvs.length > 0) {
                 uvBuffer = allocateDirectFloatBuffer(uvs.length);
                 setBuffer(uvBuffer, uvs);
@@ -106,7 +106,7 @@ public class MeshRenderer {
 
         // Tangent
         if (gameObject.hasProperties[3]) {
-            tangents = mesh.getTriangleTangent(subMesh);
+            tangents = subMesh.getTriangleTangent();
             if (tangents != null && tangents.length > 0) {
                 tangentBuffer = allocateDirectFloatBuffer(tangents.length);
                 setBuffer(tangentBuffer, tangents);
@@ -154,8 +154,8 @@ public class MeshRenderer {
     }
 
     private Texture getAutoTexture() {
-        if (mesh == null || subMesh == null) return null;
-        return mesh.getTextureKa(subMesh.materialName);
+        if (subMesh == null) return null;
+        return subMesh.textureKa;
     }
 
     private void bindAutoTexture() {
