@@ -130,6 +130,7 @@ public class RayTracingMaterial extends Material {
     Texture lastFrame = new Texture(1,1);
     Vector3 camPos = new Vector3(0,0,0);
     Texture earth = new Texture(1,1);
+    Texture pekora = new Texture(1,1);
     boolean dark = true;
 
     public RayTracingMaterial(String frag) {
@@ -148,6 +149,11 @@ public class RayTracingMaterial extends Material {
         earth = t;
         return this;
     }
+    public RayTracingMaterial setPekora(Texture t) {
+        pekora = t;
+        return this;
+    }
+    
     public RayTracingMaterial setCamPos(float x, float y, float z) {
         camPos.set(x,y,z);
         return this;
@@ -165,8 +171,10 @@ public class RayTracingMaterial extends Material {
 
     public void run(GameObject go) {
         setGameobject(go); 
-        shader.set("earth", earth.img);
-        setTexture("lastFrame", lastFrame ,1);       
+        //shader.set("earth", earth.img);
+        shader.set("pekora", pekora.img);  
+        setTexture("lastFrame", lastFrame ,1);  
+            
         setMatrix4ToUniform("invProject", main_camera.projection.Inverse().transposed());
         setMatrix4ToUniform("camToWorld", main_camera.worldView.Inverse().transposed());
         setVector3ToUniform("camPos" , camPos.x , camPos.y , camPos.z);

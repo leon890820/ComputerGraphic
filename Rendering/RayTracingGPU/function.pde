@@ -175,6 +175,16 @@ public float[] getSphereData(Vector3 center, float r, int type, Vector3 albedo, 
     return data;
 }
 
+public float[] getTriangleData(Vector3[] T,Vector3[] UV, int type, Vector3 albedo, float fuzz, float refraction_index) {
+    float[] data = new float[]{T[0].x, T[0].y, T[0].z, 0.0,
+                               T[1].x, T[1].y, T[1].z, 0.0,
+                               T[2].x, T[2].y, T[2].z, 0.0,
+                               type, 0.0, 0.0, 0.0, // material
+                               albedo.x, albedo.y, albedo.z, fuzz,
+                               refraction_index, 0.0, 0.0, 0.0};
+    return data;
+}
+
 public float[] getTriangleData(Vector3[] T, int type, Vector3 albedo, float fuzz, float refraction_index) {
     float[] data = new float[]{T[0].x, T[0].y, T[0].z, 0.0,
                                T[1].x, T[1].y, T[1].z, 0.0,

@@ -81,6 +81,8 @@ void setup() {
     cameraSetting();
     setMaterial();    
     initSetting();
+    
+    
 
     //println(gl3.GL_MAX_FRAGMENT_UNIFORM_COMPONENTS);
     //println(gl3.glGetString(gl3.GL_VERSION));
@@ -159,7 +161,7 @@ void setScence(int i){
         ssbo_triangle = new SSBO(0, rayTracingMaterial, getFinalScenceData());
         ssbo_circle = new SSBO(1, rayTracingMaterial, getFinalScenceData1());
     }else if(i == 3){
-        rayTracingMaterial.setDark(false);
+        rayTracingMaterial.setDark(true);
         //knight = new RayTracingObject("Meshes/Knight", rayTracingMaterial,15);
         dragon = new RayTracingObject("Meshes/Dragon_8K", rayTracingMaterial,15);
         
@@ -167,7 +169,7 @@ void setScence(int i){
         
         ssbo_triangle = new SSBO(0, rayTracingMaterial, dragon.getBVHTriangleData());
         SSBO ssbo_node = new SSBO(2, rayTracingMaterial, dragon.getNodeData());
-        
+        SSBO ssbo_cornell = new SSBO(3, rayTracingMaterial, getCornellData());
 
         
     }
@@ -177,7 +179,7 @@ void setScence(int i){
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPosition(2.0, 0.0, 0.0).setEular(0.0, 1.57, 0.0);
+    main_camera.setPosition(1.3, 0.0, 0.0).setEular(0.0, 1.57, 0.0);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 
@@ -280,6 +282,66 @@ public float[] getFinalScenceData1(){
     return data.toArray();
 }
 
+public float[] getCornellData(){
+    float boxSize = 1.5;
+    
+    FloatList data = new FloatList();
+
+    //light
+    Vector3[] lv1 = new Vector3[]{new Vector3(-0.35 * boxSize,boxSize - 0.01,-0.35 * boxSize) , new Vector3(0.35 * boxSize,boxSize - 0.01,-0.35 * boxSize), new Vector3(0.35 * boxSize,boxSize - 0.01,0.35 * boxSize)};
+    Vector3[] lv2 = new Vector3[]{new Vector3(-0.35 * boxSize,boxSize - 0.01,-0.35 * boxSize) , new Vector3(0.35 * boxSize,boxSize - 0.01,0.35 * boxSize), new Vector3(-0.35 * boxSize,boxSize - 0.01,0.35 * boxSize)};    
+    float[] lt1 = getTriangleData(lv1 , 3 , new Vector3(5.0) , 0.0 , 0.0);
+    float[] lt2 = getTriangleData(lv2 , 3 , new Vector3(5.0) , 0.0 , 0.0);    
+    data.append(lt1);
+    data.append(lt2);
+    //right
+    Vector3[] right1 = new Vector3[]{new Vector3(boxSize,-boxSize,boxSize) , new Vector3(-boxSize,-boxSize,boxSize), new Vector3(-boxSize,boxSize,boxSize)};
+    Vector3[] right2 = new Vector3[]{new Vector3(boxSize,-boxSize,boxSize) , new Vector3(-boxSize,boxSize,boxSize), new Vector3(boxSize,boxSize,boxSize)};    
+    float[] rightt1 = getTriangleData(right1 , 1 , new Vector3(1.0,0.0,0.0) , 0.9 , 0.0);
+    float[] rightt2 = getTriangleData(right2 , 1 , new Vector3(1.0,0.0,0.0) , 0.9 , 0.0);    
+    data.append(rightt1);
+    data.append(rightt2);
+    //left
+    Vector3[] left1 = new Vector3[]{new Vector3(-boxSize,-boxSize,-boxSize) , new Vector3(boxSize,-boxSize,-boxSize), new Vector3(boxSize,boxSize,-boxSize)};
+    Vector3[] left2 = new Vector3[]{new Vector3(-boxSize,-boxSize,-boxSize) , new Vector3(boxSize,boxSize,-boxSize), new Vector3(-boxSize,boxSize,-boxSize)};    
+    float[] leftt1 = getTriangleData(left1 , 1 , new Vector3(0.0,1.0,0.0) , 0.9 , 0.0);
+    float[] leftt2 = getTriangleData(left2 , 1 , new Vector3(0.0,1.0,0.0) , 0.9 , 0.0);    
+    data.append(leftt1);
+    data.append(leftt2);
+    //top
+    Vector3[] top1 = new Vector3[]{new Vector3(boxSize,boxSize,-boxSize) , new Vector3(-boxSize,boxSize,-boxSize), new Vector3(-boxSize,boxSize,boxSize)};
+    Vector3[] top2 = new Vector3[]{new Vector3(boxSize,boxSize,-boxSize) , new Vector3(-boxSize,boxSize,boxSize), new Vector3(boxSize,boxSize,boxSize)};    
+    float[] topt1 = getTriangleData(top1 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.9 , 0.0);
+    float[] topt2 = getTriangleData(top2 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.9 , 0.0);    
+    data.append(topt1);
+    data.append(topt2);
+    
+    //button
+    Vector3[] button1 = new Vector3[]{new Vector3(boxSize,-boxSize,-boxSize) , new Vector3(boxSize,-boxSize,boxSize), new Vector3(-boxSize,-boxSize,boxSize)};
+    Vector3[] button2 = new Vector3[]{new Vector3(boxSize,-boxSize,-boxSize) , new Vector3(-boxSize,-boxSize,boxSize), new Vector3(-boxSize,-boxSize,-boxSize)};    
+    float[] buttont1 = getTriangleData(button1 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.9 , 0.0);
+    float[] buttont2 = getTriangleData(button2 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.9 , 0.0);    
+    data.append(buttont1);
+    data.append(buttont2);
+    
+    //back
+    Vector3[] back1 = new Vector3[]{new Vector3(-boxSize,-boxSize,-boxSize) , new Vector3(-boxSize,-boxSize,boxSize), new Vector3(-boxSize,boxSize,boxSize)};
+    Vector3[] back2 = new Vector3[]{new Vector3(-boxSize,-boxSize,-boxSize) , new Vector3(-boxSize,boxSize,boxSize), new Vector3(-boxSize,boxSize,-boxSize)};    
+    float[] backt1 = getTriangleData(back1 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.9 , 0.0);
+    float[] backt2 = getTriangleData(back2 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.9 , 0.0);    
+    data.append(backt1);
+    data.append(backt2);
+    
+    //front
+    Vector3[] front1 = new Vector3[]{new Vector3(boxSize,-boxSize,-boxSize) , new Vector3(boxSize,-boxSize,boxSize), new Vector3(boxSize,boxSize,boxSize)};
+    Vector3[] front2 = new Vector3[]{new Vector3(boxSize,-boxSize,-boxSize) , new Vector3(boxSize,boxSize,boxSize), new Vector3(boxSize,boxSize,-boxSize)};    
+    float[] frontt1 = getTriangleData(front1 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.1 , 0.0);
+    float[] frontt2 = getTriangleData(front2 , 1 , new Vector3(1.0, 1.0, 1.0) , 0.1 , 0.0);    
+    data.append(frontt1);
+    data.append(frontt2);
+        
+    return data.toArray();
+}
 
 public float[] getFinalScenceData() {
     int boxes_per_side = 3;

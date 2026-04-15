@@ -20,7 +20,7 @@ public class BoundingVolumeHierarchy{
                 maxB.set(max(maxB.x, tri.verts[j].x), max(maxB.y, tri.verts[j].y), max(maxB.z, tri.verts[j].z));
             }            
         }
-        if(depth == 0 || triangles.size() <= 5){
+        if(depth == 0 || triangles.size() <= 2){
             this.triangles = triangles;
             return;
         }
@@ -29,7 +29,7 @@ public class BoundingVolumeHierarchy{
         Vector3 boundcenter = (maxB.add(minB)).mult(0.5);
         Vector3 triangleCenter = getAverageTriangleCenter(triangles);
         int a = size.x > size.y && size.x > size.z ? 0 : size.y > size.z? 1 :2 ;
-        println(a);
+
         ArrayList<Triangle> triA = new ArrayList<Triangle>();
         ArrayList<Triangle> triB = new ArrayList<Triangle>();
         for(int i = 0; i < triangles.size(); i++){

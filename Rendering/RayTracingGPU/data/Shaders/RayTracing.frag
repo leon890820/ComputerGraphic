@@ -189,12 +189,18 @@ layout (std430,binding = 0) buffer SSBO_TriangleData{
 };
 
 
+
+
 layout (std430,binding = 1) buffer SSBO_SphereData{
     Sphere sphere[];
 };
 
 layout (std430,binding = 2) buffer SSBO_NodeData{
     Node nodes[];
+};
+
+layout (std430,binding = 3) buffer SSBO_CornellBoxData{
+    Triangle cornellTriangle[];
 };
 
 bool rayBoundingBox(vec3 o,vec3 dir, vec3 minB, vec3 maxB){
@@ -368,11 +374,11 @@ vec3 rayColor(Ray ray, inout HitRecord record){
                 min_drecord = record.t;
             }
         }
-        // for(int i = 0; i < triangle.length(); i++){
-        //     if(rayTriangle(ray , triangle[i] , 0.001 , min_drecord , record)){
-        //         min_drecord = record.t;
-        //     }
-        // }
+        for(int i = 0; i < cornellTriangle.length(); i++){
+            if(rayTriangle(ray , cornellTriangle[i] , 0.001 , min_drecord , record)){
+                min_drecord = record.t;
+            }
+        }
         rayBVHTriangle(ray, nodes[0], 0.001, min_drecord, record);
 
         if(record.t > 0) {        

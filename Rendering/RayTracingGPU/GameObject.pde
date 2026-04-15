@@ -227,7 +227,7 @@ public class RayTracingObject extends GameObject {
         FloatList data = new FloatList();
         
         for(Triangle triangle : BVHTriangles){
-            float[] d = getTriangleData(triangle.verts, 0, new Vector3(0.48, 0.83, 0.53), 0.0, 0.0);
+            float[] d = getTriangleData(triangle.verts, 2, new Vector3(0.5, 0.5, 0.5), 0.8, 1.5);
             data.append(d);
         }
         

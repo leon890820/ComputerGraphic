@@ -51,8 +51,7 @@ PJOGL pgl;
 GL2ES2 gl;
 GL3 gl3;
 
-
-
+ComputeMaterial cm;
 
 float a = -PI/4;
 float time = 0.0;
@@ -73,6 +72,7 @@ void setup() {
     setMaterial();
     initSetting();
 
+    
 }
 
 
@@ -81,7 +81,9 @@ void draw() {
     move();   
 
     background(0);
-    pekora.run();
+    //pekora.run();
+    
+    cm.run(null);
     
     main_light.setLightdirection(200 * cos(a), -200 ,200 * sin(a) );    
 
@@ -98,7 +100,7 @@ public void initSetting() {
 }
 
 void setGameObject() {
-    pekora = new PhongObject("Meshes/pekora", phongMaterial);
+    //pekora = new PhongObject("Meshes/pekora", phongMaterial);
     //dragon.setScale(50, 50, 50);    
   
 
@@ -107,9 +109,10 @@ void setGameObject() {
 }
 
 void setMaterial() {  
+    cm = new ComputeMaterial("Shaders/test.compute");
+    
     phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5);
-    
 }
 
 

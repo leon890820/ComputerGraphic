@@ -80,7 +80,7 @@ public class MeshRenderer {
     
     void pushVertexAttribData(String name,int ind, FloatBuffer buffer ,int size , int num, int bias){
         int posVboId = vbo.get(ind);       
-        int posLoc = gl3.glGetAttribLocation(material.shader.program, name);
+        int posLoc = gl3.glGetAttribLocation(material.shader.glProgram, name);
                        
         gl3.glBindBuffer(GL.GL_ARRAY_BUFFER, posVboId);
         gl3.glBufferData(GL.GL_ARRAY_BUFFER, Float.BYTES *size, buffer, GL.GL_STATIC_DRAW);

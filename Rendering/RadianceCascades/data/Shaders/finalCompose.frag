@@ -111,7 +111,7 @@ vec3 drawGraphBackground_Ex(vec2 pixelCoords, float scale) {
 
   colour = drawGrid(pixelCoords, colour, col3(0.5), 10.0, 1.0, pixelSize);
   colour = drawGrid(pixelCoords, colour, col3(0.25), 100.0, 2.5, pixelSize);
-  colour = (col3(0.95) + hash(pixelCoords) * 0.01) * colour;
+  //colour = (col3(0.95) + hash(pixelCoords) * 0.01) * colour;
 
   return colour;
 }
@@ -138,5 +138,5 @@ void main() {
   colour *= radiance.xyz;
   colour = aces_tonemap(colour);
 
-  fragColor = vec4(colour, 1.0);
+  fragColor = vec4(bg, 1.0);
 }
