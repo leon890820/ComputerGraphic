@@ -9,9 +9,11 @@ uniform vec3 ambient_light;
 uniform vec3 light_color;
 uniform vec3 view_pos;
 
+uniform sampler2D tex;
 
 in vec3 vertNormal;
 in vec3 worldVertex;
+in vec2 tex_coord;
 in float depth;
 
 layout(location = 0) out vec4 fragColor;
@@ -20,9 +22,10 @@ layout(location = 0) out vec4 fragColor;
 void main() {  
 
   vec3 color;
-  //vec3 texture_color = texture(tex,tex_coord).rgb;
+  vec2 coord = vec2(tex_coord.x, 1 - tex_coord.y);
+  vec3 texture_color = texture(tex,coord).rgb;
  
-  vec3 ambient =  albedo;//(texture_color) * ambient_light;
+  vec3 ambient =  (texture_color) * ambient_light;
   vec3 ld = normalize(-light_dir);
   vec3 diffuse = 0.7 * light_color * max(0.0, dot( vertNormal , ld ));
 

@@ -353,9 +353,9 @@ class Triangle {
     }
     
     public boolean intersection(Vector3 o,Vector3 dir,Matrix4 ltw){
-        Vector3 v0 = ltw.mult(verts[0]);
-        Vector3 v1 = ltw.mult(verts[1]);
-        Vector3 v2 = ltw.mult(verts[2]);
+        Vector3 v0 = ltw.transformPoint(verts[0]);
+        Vector3 v1 = ltw.transformPoint(verts[1]);
+        Vector3 v2 = ltw.transformPoint(verts[2]);
         
         Vector3 e1 = Vector3.sub(v1,v0);
         Vector3 e2 = Vector3.sub(v2,v0);

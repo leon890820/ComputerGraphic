@@ -24,7 +24,7 @@ static int GH_FBO_SIZE = 2048;
 static int GH_MAX_RECURSION = 4;
 
 //Gameplay
-static float GH_MOUSE_SENSITIVITY = 0.01f;
+static float GH_MOUSE_SENSITIVITY = 0.005f;
 static float GH_MOUSE_SMOOTH = 0.5f;
 static float GH_WALK_SPEED = 0.01f;
 static float GH_WALK_ACCEL = 50.0f;
@@ -46,7 +46,9 @@ Light main_light;
 
 PhongMaterial phongMaterial;
 PhongObject pekora;
-   
+
+Texture pekoraTexture;
+
 PJOGL pgl;
 GL2ES2 gl;
 GL3 gl3;
@@ -109,6 +111,9 @@ void setGameObject() {
 void setMaterial() {  
     phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5);
+    
+    pekoraTexture = new Texture("Textures/Brick_Diffuse.JPG");
+    phongMaterial.setTexture(pekoraTexture);
 }
 
 
@@ -157,22 +162,24 @@ void keyReleased() {
 }
 
 void move() {
-    if (mousePressed) {
-        if (mouseButton == RIGHT) {
-            float dx = (pmouseX - mouseX) * GH_MOUSE_SENSITIVITY;
-            float dy = (pmouseY - mouseY) * GH_MOUSE_SENSITIVITY;
-            main_camera.transform.eular.set(main_camera.transform.eular.x + dy, main_camera.transform.eular.y + dx, 0.0);
-        }
+    if (mousePressed && mouseButton == RIGHT) {
+        float dx = (pmouseX - mouseX) * GH_MOUSE_SENSITIVITY;
+        float dy = (pmouseY - mouseY) * GH_MOUSE_SENSITIVITY;
+
+        Vector3 rot = main_camera.getEular();
+        main_camera.setEular(rot.x + dy, rot.y + dx, 0.0);
     }
 
-    Vector3 forward = main_camera.localToWorld().mult(new Vector3(0, 0, -1));
-    Vector3 right = main_camera.localToWorld().mult(new Vector3(1, 0, 0));
+    Matrix4 camMat = main_camera.localToWorld();
+    Vector3 forward = camMat.transformDirection(new Vector3(0, 0, -1));
+    Vector3 right   = camMat.transformDirection(new Vector3(1, 0, 0));
 
-    float wx = key_input[3] ? 1.0 * GH_WALK_SPEED : key_input[1] ? -1.0 * GH_WALK_SPEED : 0.0;
-    float wz = key_input[0] ? 1.0 * GH_WALK_SPEED : key_input[2] ? -1.0 * GH_WALK_SPEED: 0.0;
+    float wx = key_input[3] ? 1.0f * GH_WALK_SPEED : key_input[1] ? -1.0f * GH_WALK_SPEED : 0.0f;
+    float wz = key_input[0] ? 1.0f * GH_WALK_SPEED : key_input[2] ? -1.0f * GH_WALK_SPEED : 0.0f;
 
     Vector3 mv = forward.mult(wz).add(right.mult(wx));
-    main_camera.transform.position = main_camera.transform.position.add(mv);
+    Vector3 pos = main_camera.getPosition().add(mv);
 
+    main_camera.setPosition(pos);
     main_camera.update();
 }

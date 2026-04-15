@@ -1,6 +1,12 @@
+import java.util.HashMap;
+
 public abstract class Material {
     PShader shader;
     GameObject gameobject;
+
+    private HashMap<String, Integer> uniformCache = new HashMap<String, Integer>();
+    private FloatBuffer matrixBuffer = allocateDirectFloatBuffer(16);
+
     public Material(String frag) {
         shader = loadShader(frag);
     }
@@ -14,49 +20,122 @@ public abstract class Material {
         return this;
     }
 
-    public void setTexture(String name, Texture tex, int c) {
-        gl3.glActiveTexture(gl3.GL_TEXTURE0 + c);
+    protected int getUniformLocation(String name) {
+        if (uniformCache.containsKey(name)) {
+            return uniformCache.get(name);
+        }
+
+        int location = gl3.glGetUniformLocation(shader.glProgram, name);
+        uniformCache.put(name, location);
+
+        if (location == -1) {
+            println("[Material] Warning: uniform not found -> " + name);
+        }
+
+        return location;
+    }
+
+    private FloatBuffer writeMatrixToBuffer(Matrix4 m) {
+        matrixBuffer.rewind();
+        matrixBuffer.put(m.m);
+        matrixBuffer.rewind();
+        return matrixBuffer;
+    }
+
+    public void setTexture(String name, Texture tex, int unit) {
+        if (tex == null || tex.tex == null) {
+            println("[Material] Warning: texture is null -> " + name);
+            return;
+        }
+
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+
+        gl3.glActiveTexture(gl3.GL_TEXTURE0 + unit);
         gl3.glBindTexture(gl3.GL_TEXTURE_2D, tex.tex.get(0));
-        int textureLocation = gl3.glGetUniformLocation(shader.glProgram, name);
-        gl3.glUniform1i(textureLocation, c);
+        gl3.glUniform1i(location, unit);
     }
 
-    void setMatrix4ToUniform(String s, Matrix4 m) {
-        int location = gl3.glGetUniformLocation(shader.glProgram, s);
-        gl3.glUniformMatrix4fv(location, 1, false, toFloatBuffer(m));
+    public void unbindTexture(int unit) {
+        gl3.glActiveTexture(gl3.GL_TEXTURE0 + unit);
+        gl3.glBindTexture(gl3.GL_TEXTURE_2D, 0);
     }
 
-    void setVector3ToUniform(String s, float x, float y, float z) {
-        int location = gl3.glGetUniformLocation(shader.glProgram, s);
+    public void setMatrix4ToUniform(String name, Matrix4 m) {
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+
+        gl3.glUniformMatrix4fv(location, 1, false, writeMatrixToBuffer(m));
+    }
+
+    public void setVector4ToUniform(String name, float x, float y, float z, float w) {
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+
+        gl3.glUniform4f(location, x, y, z, w);
+    }
+
+    public void setVector3ToUniform(String name, float x, float y, float z) {
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+
         gl3.glUniform3f(location, x, y, z);
     }
-    void setVector2ToUniform(String s, float x, float y) {
-        int location = gl3.glGetUniformLocation(shader.glProgram, s);
+
+    public void setVector3ToUniform(String name, Vector3 v) {
+        if (v == null) return;
+        setVector3ToUniform(name, v.x, v.y, v.z);
+    }
+
+    public void setVector2ToUniform(String name, float x, float y) {
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+
         gl3.glUniform2f(location, x, y);
     }
-    
-    void setFloatToUniform(String s, float x) {
-        int location = gl3.glGetUniformLocation(shader.glProgram, s);
+
+    public void setFloatToUniform(String name, float x) {
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+
         gl3.glUniform1f(location, x);
     }
-    void setIntToUniform(String s, int x) {
-        int location = gl3.glGetUniformLocation(shader.glProgram, s);
+
+    public void setIntToUniform(String name, int x) {
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+
         gl3.glUniform1i(location, x);
     }
 
+    public void clearUniformCache() {
+        uniformCache.clear();
+    }
+
+    public void bind() {
+        shader.bind();
+    }
+
+    public void unbind() {
+        shader.unbind();
+    }
+
     abstract void run(GameObject go);
+
+    void cleanup() {
+    }
 }
 
+
 public class PhongMaterial extends Material {
-    Vector3 albedo = new Vector3(0.0);
+    Vector3 albedo = new Vector3(0.0f);
     Matrix4 light_MVP;
     Texture texture;
-
-
 
     public PhongMaterial(String frag) {
         super(frag);
     }
+
     public PhongMaterial(String frag, String vert) {
         super(frag, vert);
     }
@@ -81,19 +160,33 @@ public class PhongMaterial extends Material {
         return this;
     }
 
-
     public void run(GameObject go) {
-
         setGameobject(go);
-        setMatrix4ToUniform("MVP", gameobject.MVP().transposed());
-        shader.set("modelMatrix", gameobject.localToWorld().transposed().toPMatrix());
-        shader.set("light_dir", main_light.light_dir.x, main_light.light_dir.y, main_light.light_dir.z);
 
-        shader.set("ambient_light", AMBIENT_LIGHT.x, AMBIENT_LIGHT.y, AMBIENT_LIGHT.z);
-        setVector3ToUniform("albedo", albedo.x, albedo.y, albedo.z);
-        shader.set("light_color", main_light.light_color.x, main_light.light_color.y, main_light.light_color.z);
-        shader.set("view_pos", main_camera.transform.position.x, main_camera.transform.position.y, main_camera.transform.position.z);
+        Matrix4 model = gameobject.localToWorld();
+        Matrix4 mvp = gameobject.MVP();
 
-        if (texture!=null)shader.set("tex", texture.img);
+        setMatrix4ToUniform("MVP", mvp);
+        setMatrix4ToUniform("modelMatrix", model);
+
+        setVector3ToUniform("light_dir", main_light.light_dir);
+        setVector3ToUniform("ambient_light", AMBIENT_LIGHT);
+        setVector3ToUniform("light_color", main_light.light_color);
+        setVector3ToUniform("view_pos", main_camera.transform.position);
+        setVector3ToUniform("albedo", albedo);
+
+        if (light_MVP != null) {
+            setMatrix4ToUniform("light_MVP", light_MVP);
+        }
+
+        if (texture != null && texture.tex != null) {
+            setTexture("tex", texture, 0);
+        }
+    }
+
+    void cleanup() {
+        if (texture != null && texture.tex != null) {
+            unbindTexture(0);
+        }
     }
 }

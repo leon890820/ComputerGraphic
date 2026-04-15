@@ -9,10 +9,13 @@ public abstract class GameObject {
     public GameObject() {
         transform = new Transform();
     }
+
     public GameObject setTransform(Transform trans) {
         transform = trans;
+        transform.forceDirty();
         return this;
     }
+
     public GameObject setTransform(Vector3 pos, Vector3 eular, Vector3 scale) {
         transform.setPosition(pos).setEular(eular).setScale(scale);
         return this;
@@ -27,6 +30,7 @@ public abstract class GameObject {
         transform.setEular(eular);
         return this;
     }
+
     public GameObject setScale(Vector3 scale) {
         transform.setScale(scale);
         return this;
@@ -41,6 +45,7 @@ public abstract class GameObject {
         transform.setEular(x, y, z);
         return this;
     }
+
     public GameObject setScale(float x, float y, float z) {
         transform.setScale(x, y, z);
         return this;
@@ -56,13 +61,14 @@ public abstract class GameObject {
         return this;
     }
 
-
     Vector3 getPosition() {
         return transform.position;
     }
+
     Vector3 getEular() {
         return transform.eular;
     }
+
     Vector3 getScale() {
         return transform.scale;
     }
@@ -76,61 +82,66 @@ public abstract class GameObject {
         name = s;
         return this;
     }
-    
-    public float[] getTrianglePosition(){
+
+    public float[] getTrianglePosition() {
         return mesh.getTrianglePosition();
     }
-    public float[] getTriangleNormal(){
+
+    public float[] getTriangleNormal() {
         return mesh.getTriangleNormal();
     }
-    public float[] getTriangleUV(){
+
+    public float[] getTriangleUV() {
         return mesh.getTriangleUV();
     }
-    public float[] getTriangleTangent(){
+
+    public float[] getTriangleTangent() {
         return mesh.getTriangleTangent();
     }
-    
-    public int getNumber(){
+
+    public int getNumber() {
         return mesh.triangles.size();
     }
 
-
     public void update() {
     }
+
     public void run() {
-        meshRenderer.render();
-    }
-    public void debugRun() {
-        meshRenderer.debugRender();
+        if (meshRenderer != null) {
+            meshRenderer.render();
+        }
     }
 
+    public void debugRun() {
+        if (meshRenderer != null) {
+            meshRenderer.debugRender();
+        }
+    }
 
     public Matrix4 localToWorld() {
-        Vector3 pos = getPosition();
-        Vector3 eular = getEular();
-        Vector3 scale = getScale();
-        return Matrix4.Trans(pos).mult(Matrix4.RotY(eular.y)).mult(Matrix4.RotX(eular.x)).mult(Matrix4.RotZ(eular.z)).mult(Matrix4.Scale(scale));
-    }
-    public Matrix4 worldToLocal() {
-        Vector3 pos = getPosition();
-        Vector3 eular = getEular();
-        Vector3 scale = getScale();
-        return Matrix4.Scale(scale.inv()).mult(Matrix4.RotZ(-eular.z)).mult(Matrix4.RotX(-eular.x)).mult(Matrix4.RotY(-eular.y)).mult(Matrix4.Trans(pos.mult(-1)));
-    }
-    public Vector3 forward() {
-        return localToWorld().mult(new Vector3(0, 0, -1));
-    }
-    public Vector3 right() {
-        return localToWorld().mult(new Vector3(1, 0, 0));
+        return transform.localToWorld();
     }
 
+    public Matrix4 worldToLocal() {
+        return transform.worldToLocal();
+    }
+
+    public Vector3 forward() {
+        return localToWorld().transformDirection(new Vector3(0, 0, -1)).unit_vector();
+    }
     
+    public Vector3 right() {
+        return localToWorld().transformDirection(new Vector3(1, 0, 0)).unit_vector();
+    }
+    
+    public Vector3 up() {
+        return localToWorld().transformDirection(new Vector3(0, 1, 0)).unit_vector();
+    }
 
     public Matrix4 MVP() {
         return main_camera.Matrix().mult(localToWorld());
     }
 }
-
 
 
 public class PhongObject extends GameObject {
@@ -140,7 +151,7 @@ public class PhongObject extends GameObject {
 
     public PhongObject(String name, Material mat) {
         mesh = new Mesh(name);
-        hasProperties = new boolean[]{true,true,false,false};
+        hasProperties = new boolean[]{true, true, true, false};
         material = mat.setGameobject(this);
         meshRenderer = new MeshRenderer(mesh, material, this);
     }
