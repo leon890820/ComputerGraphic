@@ -4,6 +4,7 @@ precision mediump float;
 #endif
 
 uniform vec3 light_dir;
+uniform vec3 light_pos;
 uniform vec3 albedo;
 uniform vec3 ambient_light;
 uniform vec3 light_color;
@@ -17,7 +18,7 @@ in vec2 tex_coord;
 in float depth;
 
 layout(location = 0) out vec4 fragColor;
-
+layout(location = 1) out vec4 fragNormal;
 
 void main() {  
 
@@ -26,7 +27,7 @@ void main() {
   vec3 texture_color = texture(tex,coord).rgb;
  
   vec3 ambient =  albedo;//(texture_color) * ambient_light;
-  vec3 ld = normalize(-light_dir);
+  vec3 ld = normalize(light_pos - worldVertex);
   vec3 diffuse = 0.7 * light_color * max(0.0, dot( vertNormal , ld ));
 
   vec3 view_dir = normalize(view_pos - worldVertex);
@@ -36,6 +37,5 @@ void main() {
   color = ambient + (diffuse + specular);
 
   fragColor = vec4(color,1.0);
-
-
+  fragNormal = vec4(vertNormal,1.0);
 }
