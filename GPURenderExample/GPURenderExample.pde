@@ -3,6 +3,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
+import java.util.LinkedHashMap;
+
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL2ES2;
 import com.jogamp.opengl.GL3;
@@ -18,7 +20,7 @@ static int GH_SCREEN_Y = 50;
 static float GH_FOV = 30.0f;
 static float GH_NEAR_MIN = 1e-3f;
 static float GH_NEAR_MAX = 1e-1f;
-static float GH_FAR = 1000.0f;
+static float GH_FAR = 10000.0f;
 static float GH_MIN_CLIPPING=0.1f;
 static int GH_FBO_SIZE = 2048;
 static int GH_MAX_RECURSION = 4;
@@ -26,7 +28,7 @@ static int GH_MAX_RECURSION = 4;
 //Gameplay
 static float GH_MOUSE_SENSITIVITY = 0.005f;
 static float GH_MOUSE_SMOOTH = 0.5f;
-static float GH_WALK_SPEED = 0.01f;
+static float GH_WALK_SPEED = 1.0f;
 static float GH_WALK_ACCEL = 50.0f;
 static float GH_BOB_FREQ = 8.0f;
 static float GH_BOB_OFFS = 0.015f;
@@ -45,7 +47,7 @@ Camera main_camera;
 Light main_light;
 
 PhongMaterial phongMaterial;
-PhongObject pekora;
+PhongObject sponza;
 
 Texture pekoraTexture;
 
@@ -53,8 +55,10 @@ PJOGL pgl;
 GL2ES2 gl;
 GL3 gl3;
 
+QuadMaterial quadMaterial;
+Quad quad;
 
-
+FBO RSMGBuffer;
 
 float a = -PI/4;
 float time = 0.0;
@@ -82,10 +86,14 @@ void draw() {
     
     move();   
 
+    RSMGBuffer.bindFrameBuffer();
+    sponza.run();
+    RSMGBuffer.unbindFrameBuffer(width,height);
+
     background(0);
-    pekora.run();
+    quad.run();
     
-    main_light.setLightdirection(200 * cos(a), -200 ,200 * sin(a) );    
+    main_light.setLightdirection(200 * cos(a), -100 ,200 * sin(a) );    
 
 
     
@@ -100,26 +108,31 @@ public void initSetting() {
 }
 
 void setGameObject() {
-    pekora = new PhongObject("Meshes/pekora", phongMaterial);
+    sponza = new PhongObject("../../Model/sponza/Scale300Sponza", phongMaterial);
+    sponza.setScale(1,1,1);
     //dragon.setScale(50, 50, 50);    
-  
-
-
-
+    quad = new Quad(quadMaterial);
 }
 
 void setMaterial() {  
+    RSMGBuffer = new FBO(width, height, 2, gl3.GL_LINEAR);
+    
     phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5);
     
-    pekoraTexture = new Texture("Textures/Brick_Diffuse.JPG");
-    phongMaterial.setTexture(pekoraTexture);
+    pekoraTexture = new Texture("../../Model/sponza/textures/vase_plant.tga");
+    //phongMaterial.setTexture(pekoraTexture);
+    
+    quadMaterial = new QuadMaterial("Shaders/quad.frag", "Shaders/quad.vert");
+    quadMaterial.setTexture(RSMGBuffer.tex[0]);
+    
+   
 }
 
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPosition(0.0, 1.0, 2.0).setEular(-0.0, 0.0, 0.0);
+    main_camera.setPosition(0.0, -300.0, 800.0).setEular(-0.0, 0.0, 0.0);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 

@@ -190,3 +190,25 @@ public class PhongMaterial extends Material {
         }
     }
 }
+
+public class QuadMaterial extends Material {
+
+    Texture tex = new Texture(1,1);
+
+    public QuadMaterial(String frag) {
+        super(frag);
+    }
+    public QuadMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+
+    public QuadMaterial setTexture(Texture t) {
+        tex = t;
+        return this;
+    }
+    
+    public void run(GameObject go) {
+        setGameobject(go); 
+        setTexture("tex" , tex , 0);
+    }
+}

@@ -17,7 +17,7 @@ public class Camera extends GameObject {
         wid = 256.0f;
         hei = 256.0f;
         near = 0.1f;
-        far = 1000.0f;
+        far = 10000.0f;
 
         worldView.makeIdentity();
         projection.makeIdentity();

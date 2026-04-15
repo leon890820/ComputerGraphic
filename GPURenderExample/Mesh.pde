@@ -1,390 +1,614 @@
 class Mesh {
-    int NUM_VBOS=3;
-    ArrayList<Vector3> verts=new ArrayList<Vector3>();
-    ArrayList<Vector3> uvs=new ArrayList<Vector3>();
-    ArrayList<Vector3> normals=new ArrayList<Vector3>();
-    ArrayList<Vector3> tangents=new ArrayList<Vector3>();
-    ArrayList<Triangle> triangles=new ArrayList<Triangle>();
+    // 建構期 source data
+    ArrayList<Vector3> sourceVerts = new ArrayList<Vector3>();
+    ArrayList<Vector3> sourceUVs = new ArrayList<Vector3>();
+    ArrayList<Vector3> sourceNormals = new ArrayList<Vector3>();
 
-    public Mesh(){}
-    
-    
+    // Runtime / render data
+    ArrayList<Triangle> triangles = new ArrayList<Triangle>();
+    LinkedHashMap<String, SubMesh> subMeshes = new LinkedHashMap<String, SubMesh>();
+
+    String currentMaterialName = "default";
+    SubMesh currentSubMesh = null;
+
+    String mtllibName = null;
+    LinkedHashMap<String, MtlMaterial> mtlMaterials = new LinkedHashMap<String, MtlMaterial>();
+    LinkedHashMap<String, Texture> textureKaMap = new LinkedHashMap<String, Texture>();
+    String objBasePath = null;
+
+    public Mesh() {
+        setCurrentMaterial("default");
+    }
+
+    private class FaceIndex {
+        int v = -1;
+        int vt = -1;
+        int vn = -1;
+    }
 
     public Mesh(String fname) {
-        String[] fin=loadStrings(fname + ".obj");
-        for (int i=0; i<fin.length; i+=1) {
-            String line=fin[i];
-            if (line.indexOf("# ")!=-1) {
-                continue;
-            } else if (line.indexOf("v ")!=-1) {
-                String[] s=line.split(" ");
-                verts.add(new Vector3(float(s[1]), float(s[2]), float(s[3])));
-            } else if (line.indexOf("vt ")!=-1) {
-                String[] s=line.split(" ");
-                uvs.add(new Vector3(float(s[1]), float(s[2]), 0));
-            } else if (line.indexOf("vn ")!=-1) {
-                String[] s=line.split(" ");
-                normals.add(new Vector3(float(s[1]), float(s[2]), float(s[3])));
-            } else if (line.indexOf("c ")!=-1) {
-                int a, b, c=0;
-                if (line.charAt(2)=='*') {
-                    int v_ix=verts.size();
-                    a=v_ix-2;
-                    b=v_ix-1;
-                    c=v_ix;
-                } else {
-                    String[] s=line.split(" ");
-                    a=int(s[1]);
-                    b=int(s[2]);
-                    c=int(s[3]);
+        objBasePath = fname;
+
+        String[] fin = loadStrings(fname + ".obj");
+        if (fin == null) {
+            println("OBJ load failed: " + fname + ".obj");
+            setCurrentMaterial("default");
+            return;
+        }
+
+        setCurrentMaterial("default");
+
+        for (int i = 0; i < fin.length; i++) {
+            String line = fin[i];
+            if (line == null) continue;
+
+            line = line.trim();
+            if (line.length() == 0 || line.startsWith("#")) continue;
+
+            String[] s = line.split("\\s+");
+            if (s.length == 0) continue;
+
+            if (line.startsWith("v ")) {
+                if (s.length >= 4) {
+                    sourceVerts.add(new Vector3(float(s[1]), float(s[2]), float(s[3])));
                 }
-                Vector3 v1=verts.get(a-1);
-                Vector3 v2=verts.get(b-1);
-                Vector3 v3=verts.get(c-1);
-            } else if (line.indexOf("f ")!=-1) {
-                int num_slashes=0;
-                int last_slash_ix=0;
-                boolean double_slashes=false;
-                StringBuilder sb=new StringBuilder(line);
-                for (int j=0; j<line.length(); j+=1) {
-
-
-                    if (sb.charAt(j)=='/') {
-                        sb.setCharAt(j, ' ');
-                        if (last_slash_ix==i-1) double_slashes=true;
-                        last_slash_ix=i;
-                        num_slashes++;
-                    }
+            } else if (line.startsWith("vt ")) {
+                if (s.length >= 3) {
+                    sourceUVs.add(new Vector3(float(s[1]), float(s[2]), 0));
                 }
-                line=new String(sb);
-
-                int a = -1, b = -1, c = -1, d = -1;
-                int at = -1, bt = -1, ct = -1, dt = -1;
-                int an = -1, bn = -1, cn = -1, dn = -1;
-                boolean wild=line.charAt(2)=='*';
-                boolean wild2=line.charAt(3)=='*';
-                boolean isQuad=false;
-                String[] s=line.split(" ");
-
-                if (wild) {
-                } else if (num_slashes==0) {
-                    isQuad= s.length==5;
-                    if (isQuad) {
-                        a = int(s[1]) - 1;
-                        b = int(s[2]) - 1;
-                        c = int(s[3]) - 1;
-                        d = int(s[4]) - 1;
-                    } else {
-                        a = int(s[1]) - 1;
-                        b = int(s[2]) - 1;
-                        c = int(s[3]) - 1;
-                    }
-
-                } else if (num_slashes==3) {
-                    a = int(s[1]) - 1;
-                    at = int(s[2]) - 1;
-                    b = int(s[3]) - 1;
-                    bt = int(s[4]) - 1;
-                    c = int(s[5]) - 1;
-                    ct = int(s[6]) - 1;
-                } else if (num_slashes==4) {
-                    a = int(s[1]) - 1;
-                    at = int(s[2]) - 1;
-                    b = int(s[3]) - 1;
-                    bt = int(s[4]) - 1;
-                    c = int(s[5]) - 1;
-                    ct = int(s[6]) - 1;
-                    d = int(s[7]) - 1;
-                    dt = int(s[8]) - 1;
-                    isQuad = true;
-                } else if (num_slashes==6) {
-                    if (double_slashes) {
-                        
-                        a=int(s[1]) - 1;
-                        an=int(s[2]) - 1;
-                        b=int(s[3]) - 1;
-                        bn=int(s[4]) - 1;
-                        c=int(s[5]) - 1;
-                        cn=int(s[6]) - 1;
-                    } else {
-                        a=int(s[1]) - 1;
-                        at=int(s[2]) - 1;
-                        an=int(s[3]) - 1;
-                        b=int(s[4]) - 1;
-                        bt=int(s[5]) - 1;
-                        bn=int(s[6]) - 1;
-                        c=int(s[7]) - 1;
-                        ct=int(s[8]) - 1;
-                        cn=int(s[9]) - 1;
-                       
-                    }
-                } else if (num_slashes==8) {
-                    isQuad=true;
-                    if (double_slashes) {
-                        a=int(s[1]) - 1;
-                        at=int(s[1]) - 1;
-                        b=int(s[3]) - 1;
-                        bt=int(s[3]) - 1;
-                        c=int(s[5]) - 1;
-                        ct=int(s[5]) - 1;
-                        d=int(s[7]) - 1;
-                        dt=int(s[7]) - 1;
-                    } else {
-                        a=int(s[1]) - 1;
-                        at=int(s[2]) - 1;
-                        an=int(s[3]) - 1;
-                        b=int(s[4]) - 1;
-                        bt=int(s[5]) - 1;
-                        bn=int(s[6]) - 1;
-                        c=int(s[7]) - 1;
-                        ct=int(s[8]) - 1;
-                        cn=int(s[9]) - 1;
-                        d=int(s[10]) - 1;
-                        dt=int(s[11]) - 1;
-                        dn=int(s[12]) - 1;
-                    }
-                } else {
-                    continue;
+            } else if (line.startsWith("vn ")) {
+                if (s.length >= 4) {
+                    sourceNormals.add(new Vector3(float(s[1]), float(s[2]), float(s[3])));
                 }
-
-               
-                addFace(a, an , at , b, bn,bt, c, cn,ct);
-                if (isQuad) {
-                    addFace(a, an,at, c, cn,ct, d, dn,dt);
-                }
+            } else if (line.startsWith("usemtl ")) {
+                setCurrentMaterial(line.substring(7).trim());
+            } else if (line.startsWith("f ")) {
+                parseFace(s);
+            } else if (line.startsWith("mtllib ")) {
+                mtllibName = line.substring(7).trim();
+                loadMtlFile(fname, mtllibName);
             }
         }
+
         reCaculateNormal();
+        releaseSourceData();
+
+        loadTextureKaMaps();
     }
 
-    
-
-    void calcNormal() {
-        Vector3[] normal = new Vector3[verts.size()];
-        for (int i=0; i<normal.length; i+=1) {
-            normal[i] = new Vector3();
+    //========================
+    // SubMesh helpers
+    //========================
+    private SubMesh getOrCreateSubMesh(String materialName) {
+        if (materialName == null || materialName.trim().length() == 0) {
+            materialName = "default";
         }
-        for (int i=0; i<triangles.size(); i+=1) {
-            for (int j=0; j<3; j+=1) {
-                normal[triangles.get(i).triangle[j]].plus(triangles.get(i).normal[j]);
+
+        SubMesh sub = subMeshes.get(materialName);
+        if (sub == null) {
+            sub = new SubMesh(materialName);
+            subMeshes.put(materialName, sub);
+        }
+        return sub;
+    }
+
+    private void setCurrentMaterial(String materialName) {
+        if (materialName == null || materialName.trim().length() == 0) {
+            materialName = "default";
+        }
+
+        currentMaterialName = materialName.trim();
+        currentSubMesh = getOrCreateSubMesh(currentMaterialName);
+    }
+
+    private void addTriangle(Triangle tri) {
+        if (tri == null) return;
+        triangles.add(tri);
+
+        if (currentSubMesh == null) {
+            currentSubMesh = getOrCreateSubMesh(currentMaterialName);
+        }
+        currentSubMesh.triangles.add(tri);
+    }
+
+    public void printSubMeshInfo() {
+        println("SubMesh count: " + subMeshes.size());
+        for (String key : subMeshes.keySet()) {
+            SubMesh sub = subMeshes.get(key);
+            println("material = " + key + ", triangles = " + sub.triangles.size());
+        }
+    }
+
+    public SubMesh getSubMesh(String materialName) {
+        return subMeshes.get(materialName);
+    }
+
+    public ArrayList<SubMesh> getAllSubMeshes() {
+        return new ArrayList<SubMesh>(subMeshes.values());
+    }
+
+    //========================
+    // OBJ parsing
+    //========================
+    private void parseFace(String[] s) {
+        if (s.length < 4) return;
+
+        FaceIndex[] face = new FaceIndex[s.length - 1];
+        for (int i = 1; i < s.length; i++) {
+            face[i - 1] = parseFaceVertex(s[i]);
+        }
+
+        // fan triangulation
+        for (int i = 1; i < face.length - 1; i++) {
+            addFace(face[0], face[i], face[i + 1]);
+        }
+    }
+
+    private FaceIndex parseFaceVertex(String token) {
+        FaceIndex idx = new FaceIndex();
+
+        if (token == null || token.length() == 0) {
+            return idx;
+        }
+
+        String[] parts = token.split("/", -1);
+
+        if (parts.length > 0 && parts[0].length() > 0) {
+            idx.v = parseObjIndex(parts[0], sourceVerts.size());
+        }
+
+        if (parts.length > 1 && parts[1].length() > 0) {
+            idx.vt = parseObjIndex(parts[1], sourceUVs.size());
+        }
+
+        if (parts.length > 2 && parts[2].length() > 0) {
+            idx.vn = parseObjIndex(parts[2], sourceNormals.size());
+        }
+
+        return idx;
+    }
+
+    private String buildSiblingPath(String objBasePath, String fileName) {
+        int slash1 = objBasePath.lastIndexOf('/');
+        int slash2 = objBasePath.lastIndexOf('\\');
+        int slash = max(slash1, slash2);
+
+        if (slash < 0) return fileName;
+        return objBasePath.substring(0, slash + 1) + fileName;
+    }
+
+    private void loadMtlFile(String objBasePath, String mtlFileName) {
+        String mtlPath = buildSiblingPath(objBasePath, mtlFileName);
+        String[] lines = loadStrings(mtlPath);
+
+        if (lines == null) {
+            println("[Mesh] loadMtlFile failed: " + mtlPath);
+            return;
+        }
+
+        MtlMaterial current = null;
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            if (line == null) continue;
+
+            line = line.trim();
+            if (line.length() == 0 || line.startsWith("#")) continue;
+
+            String[] s = line.split("\\s+");
+            if (s.length == 0) continue;
+
+            if (line.startsWith("newmtl ")) {
+                String name = line.substring(7).trim();
+                current = new MtlMaterial();
+                current.name = name;
+                mtlMaterials.put(name, current);
+            } else if (current != null && line.startsWith("map_Ka ")) {
+                current.mapKa = line.substring(7).trim();
+            } else if (current != null && line.startsWith("map_Kd ")) {
+                current.mapKd = line.substring(7).trim();
+            } else if (current != null && line.startsWith("map_Ks ")) {
+                current.mapKs = line.substring(7).trim();
+            } else if (current != null && line.startsWith("bump ")) {
+                current.bump = line.substring(5).trim();
+            } else if (current != null && line.startsWith("map_Bump ")) {
+                current.mapBump = line.substring(9).trim();
+            } else if (current != null && line.startsWith("Ka ")) {
+                if (s.length >= 4) current.Ka = new Vector3(float(s[1]), float(s[2]), float(s[3]));
+            } else if (current != null && line.startsWith("Kd ")) {
+                if (s.length >= 4) current.Kd = new Vector3(float(s[1]), float(s[2]), float(s[3]));
+            } else if (current != null && line.startsWith("Ks ")) {
+                if (s.length >= 4) current.Ks = new Vector3(float(s[1]), float(s[2]), float(s[3]));
+            } else if (current != null && line.startsWith("Ns ")) {
+                if (s.length >= 2) current.Ns = float(s[1]);
+            } else if (current != null && line.startsWith("d ")) {
+                if (s.length >= 2) current.d = float(s[1]);
+            } else if (current != null && line.startsWith("Tr ")) {
+                if (s.length >= 2) current.Tr = float(s[1]);
+            } else if (current != null && line.startsWith("illum ")) {
+                if (s.length >= 2) current.illum = int(s[1]);
             }
         }
 
-        for (int i=0; i<normal.length; i+=1) {
-            normals.add(normal[i].unit_vector());
+        println("[Mesh] loaded mtl: " + mtlPath + ", material count = " + mtlMaterials.size());
+    }
+
+    //========================
+    // Texture loading (only map_Ka)
+    //========================
+    private void loadTextureKaMaps() {
+        textureKaMap.clear();
+
+        if (mtlMaterials == null || mtlMaterials.size() == 0) {
+            return;
         }
-        for (int i=0; i<triangles.size(); i+=1) {
-            for (int j=0; j<3; j+=1) {
-                triangles.get(i).normal[j] = normals.get(triangles.get(i).triangle[j]);
+
+        for (String materialName : mtlMaterials.keySet()) {
+            MtlMaterial m = mtlMaterials.get(materialName);
+            if (m == null) continue;
+            if (m.mapKa == null || m.mapKa.length() == 0) continue;
+
+            Texture tex = loadTextureByRelativePath(m.mapKa);
+            if (tex != null) {
+                textureKaMap.put(materialName, tex);
+                println("[Mesh] loaded map_Ka texture: material = " + materialName + ", file = " + m.mapKa);
+            } else {
+                println("[Mesh] failed to load map_Ka texture: material = " + materialName + ", file = " + m.mapKa);
             }
         }
     }
 
-    void addFace(int a, int b,int c){
-        int[] v_ix={a, b, c};
-        Vector3[] vs = {verts.get(a),  verts.get(b) , verts.get(c)};
-        triangles.add(new Triangle(vs, v_ix, triangles.size()));
-    }
-    
-    void addFace(int a,int an, int b,int bn,int c,int cn){
-        int[] v_ix={a, b, c};
-        Vector3[] vs = {verts.get(a),  verts.get(b) , verts.get(c)};
-        //Vector3[] ns = {normals.get(an),  normals.get(bn) , normals.get(cn)};
-        Vector3 n = Vector3.cross(vs[1].sub(vs[0]),vs[2].sub(vs[0])).unit_vector();
-        Vector3[] normal = {n,n,n};
-        triangles.add(new Triangle(vs,normal, v_ix, triangles.size()));
-    }
-
-    void addFace(int a, int at,int an, int b, int bt,int bn, int c, int ct,int cn) {
-
-        int[] v_ix={a, b, c};
-        int[] uv_ix={at, bt, ct};
-        int[] n_ix={an, bn, cn};
-        Vector3[] vs = {verts.get(a),  verts.get(b) , verts.get(c)};
-        Vector3 n = Vector3.cross(vs[1].sub(vs[0]),vs[2].sub(vs[0])).unit_vector();
-
-        
-        Vector3[] normal = n_ix[0] == -1 ? new Vector3[]{n,n,n} : new Vector3[]{normals.get(an), normals.get(bn), normals.get(cn)};
-        Vector3[] us;
-        if(at >= uvs.size() || bt >= uvs.size() || ct >= uvs.size()){
-            us = new Vector3[]{new Vector3(0),new Vector3(0),new Vector3(0)};
+    private Texture loadTextureByRelativePath(String fileName) {
+        if (fileName == null || fileName.trim().length() == 0) {
+            return null;
         }
-        else us = uv_ix[0] == -1 ? new Vector3[]{null,null,null} : new Vector3[]{uvs.get(at), uvs.get(bt), uvs.get(ct)};
 
-        triangles.add(new Triangle(vs, us, normal, v_ix,triangles.size()));
+        String texPath = buildSiblingPath(objBasePath, fileName);
 
+        try {
+            return new Texture(texPath);
+        } catch (Exception e) {
+            println("[Mesh] load texture exception: " + texPath);
+            e.printStackTrace();
+            return null;
+        }
     }
-    
-    
-    float[] getTrianglePosition(){
-        float[] v = new float[triangles.size() * 9];
-        for(int i = 0; i < triangles.size(); i++){
-            Triangle tri = triangles.get(i);
-            for(int j = 0; j < 3; j++){
+
+    public Texture getTextureKa(String materialName) {
+        return textureKaMap.get(materialName);
+    }
+
+    public boolean hasTextureKa(String materialName) {
+        return textureKaMap.containsKey(materialName);
+    }
+
+    public void printTextureKaInfo() {
+        println("map_Ka texture count = " + textureKaMap.size());
+        for (String key : textureKaMap.keySet()) {
+            println("material = " + key + ", has map_Ka texture");
+        }
+    }
+
+    //========================
+    // MTL query
+    //========================
+    public MtlMaterial getMtlMaterial(String materialName) {
+        return mtlMaterials.get(materialName);
+    }
+
+    public boolean hasMtlMaterial(String materialName) {
+        return mtlMaterials.containsKey(materialName);
+    }
+
+    public void printMtlInfo() {
+        println("mtllib = " + mtllibName);
+        println("mtl material count = " + mtlMaterials.size());
+        for (String key : mtlMaterials.keySet()) {
+            MtlMaterial m = mtlMaterials.get(key);
+            println("material = " + key + ", map_Ka = " + m.mapKa);
+        }
+    }
+
+    private int parseObjIndex(String s, int size) {
+        int idx = int(s);
+
+        if (idx > 0) return idx - 1;    // OBJ 1-based
+        if (idx < 0) return size + idx; // relative index
+        return -1;
+    }
+
+    private Vector3 safeGet(ArrayList<Vector3> list, int idx, Vector3 fallback) {
+        if (idx >= 0 && idx < list.size()) {
+            return list.get(idx);
+        }
+        return fallback;
+    }
+
+    private void addFace(FaceIndex ia, FaceIndex ib, FaceIndex ic) {
+        if (ia == null || ib == null || ic == null) return;
+        if (ia.v < 0 || ib.v < 0 || ic.v < 0) return;
+        if (ia.v >= sourceVerts.size() || ib.v >= sourceVerts.size() || ic.v >= sourceVerts.size()) return;
+
+        Vector3[] vs = new Vector3[] {
+            sourceVerts.get(ia.v),
+            sourceVerts.get(ib.v),
+            sourceVerts.get(ic.v)
+        };
+
+        int[] vertexIndices = new int[] { ia.v, ib.v, ic.v };
+
+        Vector3 faceNormal = Vector3.cross(
+            vs[1].sub(vs[0]),
+            vs[2].sub(vs[0])
+        ).unit_vector();
+
+        Vector3[] ns = new Vector3[] {
+            safeGet(sourceNormals, ia.vn, faceNormal),
+            safeGet(sourceNormals, ib.vn, faceNormal),
+            safeGet(sourceNormals, ic.vn, faceNormal)
+        };
+
+        Vector3 defaultUV = new Vector3(0, 0, 0);
+        Vector3[] us = new Vector3[] {
+            safeGet(sourceUVs, ia.vt, defaultUV),
+            safeGet(sourceUVs, ib.vt, defaultUV),
+            safeGet(sourceUVs, ic.vt, defaultUV)
+        };
+
+        Triangle tri = new Triangle(vs, us, ns, vertexIndices);
+        tri.materialName = currentMaterialName;
+        addTriangle(tri);
+    }
+
+    //========================
+    // Export all triangles
+    //========================
+    float[] getTrianglePosition() {
+        return getTrianglePosition(triangles);
+    }
+
+    float[] getTriangleNormal() {
+        return getTriangleNormal(triangles);
+    }
+
+    float[] getTriangleTangent() {
+        return getTriangleTangent(triangles);
+    }
+
+    float[] getTriangleUV() {
+        return getTriangleUV(triangles);
+    }
+
+    //========================
+    // Export single submesh
+    //========================
+    float[] getTrianglePosition(SubMesh sub) {
+        if (sub == null) return new float[0];
+        return getTrianglePosition(sub.triangles);
+    }
+
+    float[] getTriangleNormal(SubMesh sub) {
+        if (sub == null) return new float[0];
+        return getTriangleNormal(sub.triangles);
+    }
+
+    float[] getTriangleTangent(SubMesh sub) {
+        if (sub == null) return new float[0];
+        return getTriangleTangent(sub.triangles);
+    }
+
+    float[] getTriangleUV(SubMesh sub) {
+        if (sub == null) return new float[0];
+        return getTriangleUV(sub.triangles);
+    }
+
+    //========================
+    // Shared export implementation
+    //========================
+    private float[] getTrianglePosition(ArrayList<Triangle> tris) {
+        float[] v = new float[tris.size() * 9];
+        for (int i = 0; i < tris.size(); i++) {
+            Triangle tri = tris.get(i);
+            for (int j = 0; j < 3; j++) {
                 v[i * 9 + j * 3 + 0] = tri.verts[j].x;
                 v[i * 9 + j * 3 + 1] = tri.verts[j].y;
                 v[i * 9 + j * 3 + 2] = tri.verts[j].z;
             }
         }
-        
         return v;
     }
-    
-    float[] getTriangleNormal(){
-        float[] v = new float[triangles.size() * 9];
-        for(int i = 0; i < triangles.size(); i++){
-            Triangle tri = triangles.get(i);
-            for(int j = 0; j < 3; j++){
-                v[i * 9 + j * 3 + 0] = tri.normal[j].x;
-                v[i * 9 + j * 3 + 1] = tri.normal[j].y;
-                v[i * 9 + j * 3 + 2] = tri.normal[j].z;
+
+    private float[] getTriangleNormal(ArrayList<Triangle> tris) {
+        float[] v = new float[tris.size() * 9];
+        for (int i = 0; i < tris.size(); i++) {
+            Triangle tri = tris.get(i);
+            for (int j = 0; j < 3; j++) {
+                Vector3 n = (tri.normals != null && tri.normals[j] != null)
+                    ? tri.normals[j]
+                    : new Vector3(0, 1, 0);
+
+                v[i * 9 + j * 3 + 0] = n.x;
+                v[i * 9 + j * 3 + 1] = n.y;
+                v[i * 9 + j * 3 + 2] = n.z;
             }
         }
-        
         return v;
     }
-    
-    float[] getTriangleTangent(){
-        float[] v = new float[triangles.size() * 9];
-        for(int i = 0; i < triangles.size(); i++){
-            Triangle tri = triangles.get(i);
-            for(int j = 0; j < 3; j++){
-                //v[i * 9 + j * 3 + 0] = tri.tangents[j].x;
-                //v[i * 9 + j * 3 + 1] = tri.tangents[j].y;
-                //v[i * 9 + j * 3 + 2] = tri.tangents[j].z;
+
+    private float[] getTriangleTangent(ArrayList<Triangle> tris) {
+        float[] v = new float[tris.size() * 9];
+        for (int i = 0; i < tris.size(); i++) {
+            Triangle tri = tris.get(i);
+            for (int j = 0; j < 3; j++) {
+                Vector3 t = (tri.tangents != null && tri.tangents[j] != null)
+                    ? tri.tangents[j]
+                    : new Vector3(1, 0, 0);
+
+                v[i * 9 + j * 3 + 0] = t.x;
+                v[i * 9 + j * 3 + 1] = t.y;
+                v[i * 9 + j * 3 + 2] = t.z;
             }
         }
-        
         return v;
     }
-    
-    float[] getTriangleUV(){
-        float[] v = new float[triangles.size() * 6];
-        for(int i = 0; i < triangles.size(); i++){
-            Triangle tri = triangles.get(i);
-            for(int j = 0; j < 3; j++){
-                v[i * 6 + j * 2 + 0] = tri.uvs[j].x;
-                v[i * 6 + j * 2 + 1] = tri.uvs[j].y;                
+
+    private float[] getTriangleUV(ArrayList<Triangle> tris) {
+        float[] v = new float[tris.size() * 6];
+        for (int i = 0; i < tris.size(); i++) {
+            Triangle tri = tris.get(i);
+            for (int j = 0; j < 3; j++) {
+                Vector3 uv = (tri.uvs != null && tri.uvs[j] != null)
+                    ? tri.uvs[j]
+                    : new Vector3(0, 0, 0);
+
+                v[i * 6 + j * 2 + 0] = uv.x;
+                v[i * 6 + j * 2 + 1] = uv.y;
             }
         }
-        
         return v;
-    
     }
-    
-    void reCaculateNormal(){
-        Vector3[] result = new Vector3[verts.size()];
-        for(int i = 0; i < result.length;i++){
-            result[i] = new Vector3();
+
+    //========================
+    // Normal / tangent
+    //========================
+    void reCaculateNormal() {
+        if (sourceVerts == null || sourceVerts.size() == 0) return;
+
+        Vector3[] smoothNormals = new Vector3[sourceVerts.size()];
+        for (int i = 0; i < smoothNormals.length; i++) {
+            smoothNormals[i] = new Vector3();
         }
-        for(int i=0;i<triangles.size();i++){
+
+        for (int i = 0; i < triangles.size(); i++) {
             Triangle tri = triangles.get(i);
-            Vector3 n = Vector3.cross( tri.verts[1].sub(tri.verts[0]),tri.verts[2].sub(tri.verts[0]));
-            for(int j = 0; j< 3; j++){                
-                result[tri.triangle[j]] = result[tri.triangle[j]].add(n);
-            }        
+            Vector3 n = Vector3.cross(
+                tri.verts[1].sub(tri.verts[0]),
+                tri.verts[2].sub(tri.verts[0])
+            );
+
+            for (int j = 0; j < 3; j++) {
+                int idx = tri.vertexIndices[j];
+                if (idx >= 0 && idx < smoothNormals.length) {
+                    smoothNormals[idx] = smoothNormals[idx].add(n);
+                }
+            }
         }
-        
-        for(int i=0;i<triangles.size();i++){
+
+        for (int i = 0; i < triangles.size(); i++) {
             Triangle tri = triangles.get(i);
-            for(int j = 0; j< 3; j++){  
-                tri.normal[j] = result[tri.triangle[j]].unit_vector();
-            }    
-            tri.caculateTangent();
+            for (int j = 0; j < 3; j++) {
+                int idx = tri.vertexIndices[j];
+                if (idx >= 0 && idx < smoothNormals.length) {
+                    tri.normals[j] = smoothNormals[idx].unit_vector();
+                }
+            }
+            tri.calculateTangent();
         }
-    
     }
-    
+
+    void releaseSourceData() {
+        if (sourceVerts != null) sourceVerts.clear();
+        if (sourceUVs != null) sourceUVs.clear();
+        if (sourceNormals != null) sourceNormals.clear();
+
+        sourceVerts = null;
+        sourceUVs = null;
+        sourceNormals = null;
+    }
 
     @Override
-        public String toString() {
-        int c=1;
-        String s=new String();
+    public String toString() {
+        int c = 1;
+        String s = "";
         for (Triangle t : triangles) {
-            s+="Trangle"+ c+++":\n";
-            s+=t.toString();
+            s += "Triangle " + c++ + ":\n";
+            s += t.toString();
         }
         return s;
     }
 }
 
-class Triangle {
-    Vector3[] verts;
-    Vector3[] uvs;
-    Vector3[] normal;
-    Vector3[] tangents;
-    int[] triangle;
-    Vector3 center;
-    int idx;
-    
-    Triangle(Vector3[] verts, Vector3[] uvs, Vector3[] normal, int[] triangle,int id) {
-        this.verts=verts;
-        this.uvs=uvs;
-        this.normal=normal;
-        caculateTangent();
-        this.triangle=triangle;
-        this.idx = id;        
-        center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0/3.0);
-    }
-    
-    Triangle(Vector3[] verts,int[] triangle,int id) {
-        this.verts=verts;
+class SubMesh {
+    String materialName;
+    ArrayList<Triangle> triangles = new ArrayList<Triangle>();
 
-        this.triangle=triangle;
-        this.idx = id;
-        
-        center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0/3.0);
+    SubMesh(String materialName) {
+        this.materialName = materialName;
     }
-    
-    Triangle(Vector3[] verts, Vector3[] normal,int[] triangle,int id) {
-        this.verts=verts;
-        this.normal=normal;
-        this.triangle=triangle;
-        this.idx = id;
-        
-        center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0/3.0);
-    }
-    
-    public void caculateTangent(){
-        tangents = new Vector3[3];
-        for(int i = 0; i < tangents.length; i++){
-            tangents[i] = new Vector3(-normal[i].z, 0.0, normal[i].x);
-        }
-    }
-    
-    public boolean intersection(Vector3 o,Vector3 dir,Matrix4 ltw){
-        Vector3 v0 = ltw.transformPoint(verts[0]);
-        Vector3 v1 = ltw.transformPoint(verts[1]);
-        Vector3 v2 = ltw.transformPoint(verts[2]);
-        
-        Vector3 e1 = Vector3.sub(v1,v0);
-        Vector3 e2 = Vector3.sub(v2,v0);
-        Vector3 s = Vector3.sub(o , v0);
-        Vector3 s1 = Vector3.cross(dir , e2);
-        Vector3 s2 = Vector3.cross(s , e1);
-        float se_inv = 1.0 / Vector3.dot(s1,e1);
-        
-        float t = Vector3.dot(s2,e2) * se_inv;
-        float b1 = Vector3.dot(s1,s) * se_inv;
-        float b2 = Vector3.dot(s2,dir) * se_inv;
-        
-        if(b1 > 0.01 && b2 > 0.01 && 1-b1-b2 > 0.01 && t > 0.01) return true;
-        return false;
-    }
-    
-    
-    
 
     @Override
         public String toString() {
-        String s="Verties: \n";
-        for (Vector3 v : verts) {
-            s+=v.toString()+"\n";
+        return "SubMesh(material=" + materialName + ", triangles=" + triangles.size() + ")";
+    }
+}
+
+class Triangle {
+    String materialName = "default";
+
+    Vector3[] verts;
+    Vector3[] uvs;
+    Vector3[] normals;
+    Vector3[] tangents;
+
+    // 保留 shared vertex index，給 smooth normal 計算用
+    int[] vertexIndices;
+
+    Vector3 center;
+
+    Triangle(Vector3[] verts, Vector3[] uvs, Vector3[] normals, int[] vertexIndices) {
+        this.verts = verts;
+        this.uvs = uvs;
+        this.normals = normals;
+        this.vertexIndices = vertexIndices;
+        this.center = (verts[0].add(verts[1]).add(verts[2])).mult(1.0 / 3.0);
+        calculateTangent();
+    }
+
+    public void calculateTangent() {
+        tangents = new Vector3[3];
+        for (int i = 0; i < tangents.length; i++) {
+            Vector3 n = (normals != null && normals[i] != null) ? normals[i] : new Vector3(0, 1, 0);
+            tangents[i] = new Vector3(-n.z, 0.0, n.x);
         }
-        s+="Uvs: \n";
-        for (Vector3 v : uvs) {
-            s+=v.toString()+"\n";
+    }
+
+    public boolean intersection(Vector3 o, Vector3 dir, Matrix4 ltw) {
+        Vector3 v0 = ltw.transformPoint(verts[0]);
+        Vector3 v1 = ltw.transformPoint(verts[1]);
+        Vector3 v2 = ltw.transformPoint(verts[2]);
+
+        Vector3 e1 = Vector3.sub(v1, v0);
+        Vector3 e2 = Vector3.sub(v2, v0);
+        Vector3 s = Vector3.sub(o, v0);
+        Vector3 s1 = Vector3.cross(dir, e2);
+        Vector3 s2 = Vector3.cross(s, e1);
+        float se_inv = 1.0 / Vector3.dot(s1, e1);
+
+        float t = Vector3.dot(s2, e2) * se_inv;
+        float b1 = Vector3.dot(s1, s) * se_inv;
+        float b2 = Vector3.dot(s2, dir) * se_inv;
+
+        return b1 > 0.01 && b2 > 0.01 && 1 - b1 - b2 > 0.01 && t > 0.01;
+    }
+
+    @Override
+        public String toString() {
+        String s = "Material: " + materialName + "\n";
+
+        s += "Vertices:\n";
+        if (verts != null) {
+            for (Vector3 v : verts) {
+                s += (v == null ? "null" : v.toString()) + "\n";
+            }
         }
+
+        s += "UVs:\n";
+        if (uvs != null) {
+            for (Vector3 v : uvs) {
+                s += (v == null ? "null" : v.toString()) + "\n";
+            }
+        }
+
         return s;
     }
 }
