@@ -1,11 +1,9 @@
 public abstract class GameObject {
     String name;
     Transform transform;
-    Mesh mesh;
-
+    
+    MeshFilter meshFilter;
     ArrayList<MeshRenderer> meshRenderers;
-
-    boolean[] hasProperties = new boolean[4];
 
     public GameObject() {
         transform = new Transform();
@@ -54,7 +52,11 @@ public abstract class GameObject {
     }
 
     public GameObject setMesh(Mesh m) {
-        this.mesh = m;
+        if (meshFilter == null) {
+            meshFilter = new MeshFilter(m);
+        } else {
+            meshFilter.setMesh(m);
+        }
         return this;
     }
 
@@ -147,16 +149,17 @@ public abstract class GameObject {
     public void buildSubMeshRenderers(Material defaultMaterial) {
         clearMeshRenderers();
 
-        if (mesh == null) {
-            println("[GameObject] buildSubMeshRenderers failed: mesh is null");
+        if (meshFilter == null) {
+            println("[GameObject] buildSubMeshRenderers failed: meshFilter is null");
             return;
         }
 
+        Mesh mesh = meshFilter.getMesh();
         ArrayList<SubMesh> subs = mesh.getAllSubMeshes();
 
         for (SubMesh sub : subs) {
             MeshRenderer mr = new MeshRenderer(sub, defaultMaterial);
-            mr.initialize(this);
+            mr.initialize();
             meshRenderers.add(mr);
         }
 
@@ -178,8 +181,7 @@ public class PhongObject extends GameObject {
     }
 
     public PhongObject(String name, Material mat) {
-        mesh = new Mesh(name);
-        hasProperties = new boolean[]{true, true, true, false};
+        setMesh(new ObjLoader().load(name));
         buildSubMeshRenderers(mat);
     }
 }
@@ -187,8 +189,7 @@ public class PhongObject extends GameObject {
 public class Quad extends GameObject {
 
     public Quad(Material mat) {
-        mesh = new Mesh("Meshes/quad");
-        hasProperties = new boolean[]{true, false, true, false};
+        setMesh(new ObjLoader().load("Meshes/quad"));
         buildSubMeshRenderers(mat);
     }
 }

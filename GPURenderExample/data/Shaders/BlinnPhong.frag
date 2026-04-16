@@ -21,8 +21,7 @@ layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 fragNormal;
 
 void main() {  
-    vec2 coord = vec2(tex_coord.x, 1.0 - tex_coord.y);
-    vec3 texture_color = texture(tex, coord).rgb;
+    vec3 texture_color = texture(tex, tex_coord).rgb;
 
     vec3 N = normalize(vertNormal);
     vec3 L = normalize(light_pos - worldVertex);

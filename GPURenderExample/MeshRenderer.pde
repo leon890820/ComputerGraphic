@@ -30,7 +30,7 @@ public class MeshRenderer {
     private static final int ATTRIB_UV      = 2;
     private static final int ATTRIB_TANGENT = 3;
 
-    
+
 
     public MeshRenderer() {
     }
@@ -57,8 +57,8 @@ public class MeshRenderer {
         return subMesh == null ? "null" : subMesh.materialName;
     }
 
-    public void initialize(GameObject gameObject) {
-        if (subMesh == null || gameObject == null) {
+    public void initialize() {
+        if (subMesh == null) {
             println("[MeshRenderer] initialize failed: subMesh or gameObject is null");
             return;
         }
@@ -89,40 +89,30 @@ public class MeshRenderer {
         pushVertexAttribData(ATTRIB_POS, VBO_POS, posBuffer, positions.length, 3, 0);
 
         // Normal
-        if (gameObject.hasProperties[1]) {
-            normals = subMesh.getTriangleNormal();
-            if (normals != null && normals.length > 0) {
-                normalBuffer = allocateDirectFloatBuffer(normals.length);
-                setBuffer(normalBuffer, normals);
-                pushVertexAttribData(ATTRIB_NORMAL, VBO_NORMAL, normalBuffer, normals.length, 3, 0);
-            } else {
-                println("[MeshRenderer] Warning: has normal flag but normal data is empty, subMesh = " + subMesh.materialName);
-            }
+        normals = subMesh.getTriangleNormal();
+        if (normals != null && normals.length > 0) {
+            normalBuffer = allocateDirectFloatBuffer(normals.length);
+            setBuffer(normalBuffer, normals);
+            pushVertexAttribData(ATTRIB_NORMAL, VBO_NORMAL, normalBuffer, normals.length, 3, 0);
         }
 
         // UV
-        if (gameObject.hasProperties[2]) {
-            uvs = subMesh.getTriangleUV();
-            if (uvs != null && uvs.length > 0) {
-                uvBuffer = allocateDirectFloatBuffer(uvs.length);
-                setBuffer(uvBuffer, uvs);
-                pushVertexAttribData(ATTRIB_UV, VBO_UV, uvBuffer, uvs.length, 2, 0);
-            } else {
-                println("[MeshRenderer] Warning: has uv flag but uv data is empty, subMesh = " + subMesh.materialName);
-            }
+        uvs = subMesh.getTriangleUV();
+        if (uvs != null && uvs.length > 0) {
+            uvBuffer = allocateDirectFloatBuffer(uvs.length);
+            setBuffer(uvBuffer, uvs);
+            pushVertexAttribData(ATTRIB_UV, VBO_UV, uvBuffer, uvs.length, 2, 0);
         }
 
         // Tangent
-        if (gameObject.hasProperties[3]) {
-            tangents = subMesh.getTriangleTangent();
-            if (tangents != null && tangents.length > 0) {
-                tangentBuffer = allocateDirectFloatBuffer(tangents.length);
-                setBuffer(tangentBuffer, tangents);
-                pushVertexAttribData(ATTRIB_TANGENT, VBO_TANGENT, tangentBuffer, tangents.length, 3, 0);
-            } else {
-                println("[MeshRenderer] Warning: has tangent flag but tangent data is empty, subMesh = " + subMesh.materialName);
-            }
+
+        tangents = subMesh.getTriangleTangent();
+        if (tangents != null && tangents.length > 0) {
+            tangentBuffer = allocateDirectFloatBuffer(tangents.length);
+            setBuffer(tangentBuffer, tangents);
+            pushVertexAttribData(ATTRIB_TANGENT, VBO_TANGENT, tangentBuffer, tangents.length, 3, 0);
         }
+
 
         gl3.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
         gl3.glBindVertexArray(0);
@@ -143,7 +133,7 @@ public class MeshRenderer {
             false,
             0,
             bias
-        );
+            );
 
         gl3.glEnableVertexAttribArray(attribLoc);
     }
@@ -154,48 +144,48 @@ public class MeshRenderer {
         buffer.rewind();
     }
 
-    
+
 
     public void render(GameObject go) {
         render(go, defaultMaterial);
     }
-    
+
     public void render(GameObject go, Material overrideMaterial) {
         if (!initialized || vao == null) return;
         if (go == null) return;
-    
+
         Material useMat = overrideMaterial != null ? overrideMaterial : defaultMaterial;
         if (useMat == null) return;
-    
+
         useMat.bind();
         useMat.run(go, subMesh);
-    
+
         gl3.glBindVertexArray(vao.get(0));
         gl3.glDrawArrays(PGL.TRIANGLES, 0, count);
         gl3.glBindVertexArray(0);
-    
+
         useMat.cleanup();
         useMat.unbind();
     }
-    
+
     public void debugRender(GameObject go) {
         debugRender(go, defaultMaterial);
     }
-    
+
     public void debugRender(GameObject go, Material overrideMaterial) {
         if (!initialized || vao == null) return;
         if (go == null) return;
-    
+
         Material useMat = overrideMaterial != null ? overrideMaterial : defaultMaterial;
         if (useMat == null) return;
-    
+
         useMat.bind();
         useMat.run(go, subMesh);
-    
+
         gl3.glBindVertexArray(vao.get(0));
         gl3.glDrawArrays(PGL.LINES, 0, count);
         gl3.glBindVertexArray(0);
-    
+
         useMat.cleanup();
         useMat.unbind();
     }
