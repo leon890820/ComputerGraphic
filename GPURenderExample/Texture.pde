@@ -6,6 +6,9 @@ public class Texture {
     int height = 0;
     boolean uploaded = false;
 
+    // 可選：控制是否在 upload 前做 Y flip
+    boolean flipYOnUpload = true;
+
     public Texture() {
         tex = allocateDirectIntBuffer(1);
         gl3.glGenTextures(1, tex);
@@ -28,7 +31,7 @@ public class Texture {
             gl3.GL_RGBA,
             gl3.GL_FLOAT,
             null
-            );
+        );
 
         gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MIN_FILTER, gl3.GL_LINEAR);
         gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MAG_FILTER, gl3.GL_LINEAR);
@@ -40,10 +43,20 @@ public class Texture {
         uploaded = true;
     }
 
-    // 從圖片路徑載入並上傳到 GPU
     public Texture(String path) {
         this();
         setTexture(path);
+    }
+
+    public Texture(String path, boolean flipY) {
+        this();
+        this.flipYOnUpload = flipY;
+        setTexture(path);
+    }
+
+    public Texture setFlipYOnUpload(boolean flipY) {
+        this.flipYOnUpload = flipY;
+        return this;
     }
 
     public Texture setTexture(String path) {
@@ -79,15 +92,30 @@ public class Texture {
 
         img.loadPixels();
 
-        IntBuffer pixelBuffer = allocateDirectIntBuffer(img.pixels.length);
-        pixelBuffer.put(img.pixels);
+        int[] pixelsToUpload;
+        if (flipYOnUpload) {
+            pixelsToUpload = flipPixelsY(img.pixels, img.width, img.height);
+        } else {
+            pixelsToUpload = img.pixels;
+        }
+
+        IntBuffer pixelBuffer = allocateDirectIntBuffer(pixelsToUpload.length);
+        pixelBuffer.put(pixelsToUpload);
         pixelBuffer.rewind();
 
         gl3.glBindTexture(gl3.GL_TEXTURE_2D, tex.get(0));
 
-        // Processing 的 pixels 通常是 ARGB packed int
-        // 在 JOGL / OpenGL 中常見對應是 BGRA + UNSIGNED_BYTE
-        gl3.glTexImage2D(gl3.GL_TEXTURE_2D, 0, gl3.GL_RGBA8, img.width, img.height, 0, gl3.GL_BGRA, gl3.GL_UNSIGNED_BYTE, pixelBuffer);
+        gl3.glTexImage2D(
+            gl3.GL_TEXTURE_2D,
+            0,
+            gl3.GL_RGBA8,
+            img.width,
+            img.height,
+            0,
+            gl3.GL_BGRA,
+            gl3.GL_UNSIGNED_BYTE,
+            pixelBuffer
+        );
 
         gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MIN_FILTER, gl3.GL_LINEAR);
         gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MAG_FILTER, gl3.GL_LINEAR);
@@ -97,6 +125,18 @@ public class Texture {
         gl3.glBindTexture(gl3.GL_TEXTURE_2D, 0);
 
         uploaded = true;
+    }
+
+    private int[] flipPixelsY(int[] src, int w, int h) {
+        int[] dst = new int[src.length];
+
+        for (int y = 0; y < h; y++) {
+            int srcRow = y * w;
+            int dstRow = (h - 1 - y) * w;
+            arrayCopy(src, srcRow, dst, dstRow, w);
+        }
+
+        return dst;
     }
 
     public Texture bind(int unit) {

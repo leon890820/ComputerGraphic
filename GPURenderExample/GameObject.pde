@@ -2,7 +2,6 @@ public abstract class GameObject {
     String name;
     Transform transform;
     Mesh mesh;
-    Material material;
 
     ArrayList<MeshRenderer> meshRenderers;
 
@@ -59,11 +58,6 @@ public abstract class GameObject {
         return this;
     }
 
-    public GameObject setMaterial(Material m) {
-        material = m;
-        return this;
-    }
-
     public GameObject setName(String s) {
         name = s;
         return this;
@@ -97,7 +91,15 @@ public abstract class GameObject {
     public void run() {
         for (MeshRenderer mr : meshRenderers) {
             if (mr != null) {
-                mr.render();
+                mr.render(this);
+            }
+        }
+    }
+
+    public void runWithMaterial(Material overrideMaterial) {
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.render(this, overrideMaterial);
             }
         }
     }
@@ -105,7 +107,15 @@ public abstract class GameObject {
     public void debugRun() {
         for (MeshRenderer mr : meshRenderers) {
             if (mr != null) {
-                mr.debugRender();
+                mr.debugRender(this);
+            }
+        }
+    }
+
+    public void debugRunWithMaterial(Material overrideMaterial) {
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.debugRender(this, overrideMaterial);
             }
         }
     }
@@ -134,19 +144,33 @@ public abstract class GameObject {
         return main_camera.Matrix().mult(localToWorld());
     }
 
-    public void buildSubMeshRenderers() {
+    public void buildSubMeshRenderers(Material defaultMaterial) {
         clearMeshRenderers();
+
+        if (mesh == null) {
+            println("[GameObject] buildSubMeshRenderers failed: mesh is null");
+            return;
+        }
+
         ArrayList<SubMesh> subs = mesh.getAllSubMeshes();
 
         for (SubMesh sub : subs) {
-            MeshRenderer mr = new MeshRenderer(mesh, sub, material, this);
+            MeshRenderer mr = new MeshRenderer(sub, defaultMaterial);
+            mr.initialize(this);
             meshRenderers.add(mr);
         }
 
         println("[GameObject] buildSubMeshRenderers success: " + meshRenderers.size());
     }
-}
 
+    public void setMaterial(Material mat) {
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.setMaterial(mat);
+            }
+        }
+    }
+}
 
 public class PhongObject extends GameObject {
 
@@ -154,20 +178,17 @@ public class PhongObject extends GameObject {
     }
 
     public PhongObject(String name, Material mat) {
-        mesh = new Mesh(name);        
+        mesh = new Mesh(name);
         hasProperties = new boolean[]{true, true, true, false};
-        material = mat.setGameobject(this);
-        buildSubMeshRenderers();
-        
+        buildSubMeshRenderers(mat);
     }
 }
 
 public class Quad extends GameObject {
 
     public Quad(Material mat) {
-        mesh = new Mesh("Meshes/quad");        
-        hasProperties = new boolean[]{true,false,true,false};
-        material = mat.setGameobject(this); 
-        buildSubMeshRenderers();
+        mesh = new Mesh("Meshes/quad");
+        hasProperties = new boolean[]{true, false, true, false};
+        buildSubMeshRenderers(mat);
     }
 }

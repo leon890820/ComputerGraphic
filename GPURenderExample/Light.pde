@@ -30,6 +30,9 @@ public class Light extends GameObject{
         return this;
     }
     
+    public Matrix4 lookAt(){
+        return Matrix4.LookAt(transform.position, transform.position.add(light_dir), new Vector3(0,1,0));
+    }
 
     
 }
