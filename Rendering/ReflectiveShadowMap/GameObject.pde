@@ -3,11 +3,14 @@ public abstract class GameObject {
     Transform transform;
     Mesh mesh;
     Material material;
-    MeshRenderer meshRenderer;
+
+    ArrayList<MeshRenderer> meshRenderers;
+
     boolean[] hasProperties = new boolean[4];
 
     public GameObject() {
         transform = new Transform();
+        meshRenderers = new ArrayList<MeshRenderer>();
     }
 
     public GameObject setTransform(Transform trans) {
@@ -56,9 +59,27 @@ public abstract class GameObject {
         return this;
     }
 
-    public GameObject setMeshRenderer(MeshRenderer mr) {
-        this.meshRenderer = mr;
+    public GameObject setMaterial(Material m) {
+        material = m;
         return this;
+    }
+
+    public GameObject setName(String s) {
+        name = s;
+        return this;
+    }
+
+    public void clearMeshRenderers() {
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.dispose();
+            }
+        }
+        meshRenderers.clear();
+    }
+
+    public ArrayList<MeshRenderer> getMeshRenderers() {
+        return meshRenderers;
     }
 
     Vector3 getPosition() {
@@ -73,48 +94,19 @@ public abstract class GameObject {
         return transform.scale;
     }
 
-    public GameObject setMaterial(Material m) {
-        material = m;
-        return this;
-    }
-
-    public GameObject setName(String s) {
-        name = s;
-        return this;
-    }
-
-    public float[] getTrianglePosition() {
-        return mesh.getTrianglePosition();
-    }
-
-    public float[] getTriangleNormal() {
-        return mesh.getTriangleNormal();
-    }
-
-    public float[] getTriangleUV() {
-        return mesh.getTriangleUV();
-    }
-
-    public float[] getTriangleTangent() {
-        return mesh.getTriangleTangent();
-    }
-
-    public int getNumber() {
-        return mesh.triangles.size();
-    }
-
-    public void update() {
-    }
-
     public void run() {
-        if (meshRenderer != null) {
-            meshRenderer.render();
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.render();
+            }
         }
     }
 
     public void debugRun() {
-        if (meshRenderer != null) {
-            meshRenderer.debugRender();
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.debugRender();
+            }
         }
     }
 
@@ -129,17 +121,29 @@ public abstract class GameObject {
     public Vector3 forward() {
         return localToWorld().transformDirection(new Vector3(0, 0, -1)).unit_vector();
     }
-    
+
     public Vector3 right() {
         return localToWorld().transformDirection(new Vector3(1, 0, 0)).unit_vector();
     }
-    
+
     public Vector3 up() {
         return localToWorld().transformDirection(new Vector3(0, 1, 0)).unit_vector();
     }
 
     public Matrix4 MVP() {
         return main_camera.Matrix().mult(localToWorld());
+    }
+
+    public void buildSubMeshRenderers() {
+        clearMeshRenderers();
+        ArrayList<SubMesh> subs = mesh.getAllSubMeshes();
+
+        for (SubMesh sub : subs) {
+            MeshRenderer mr = new MeshRenderer(mesh, sub, material, this);
+            meshRenderers.add(mr);
+        }
+
+        println("[GameObject] buildSubMeshRenderers success: " + meshRenderers.size());
     }
 }
 
@@ -150,19 +154,20 @@ public class PhongObject extends GameObject {
     }
 
     public PhongObject(String name, Material mat) {
-        mesh = new Mesh(name);
+        mesh = new Mesh(name);        
         hasProperties = new boolean[]{true, true, true, false};
         material = mat.setGameobject(this);
-        meshRenderer = new MeshRenderer(mesh, material, this);
+        buildSubMeshRenderers();
+        
     }
 }
 
 public class Quad extends GameObject {
 
     public Quad(Material mat) {
-        mesh = new Mesh("Meshes/quad");
+        mesh = new Mesh("Meshes/quad");        
         hasProperties = new boolean[]{true,false,true,false};
-        material = mat.setGameobject(this);
-        meshRenderer = new MeshRenderer(mesh, material, this);
+        material = mat.setGameobject(this); 
+        buildSubMeshRenderers();
     }
 }

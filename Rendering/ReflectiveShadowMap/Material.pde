@@ -212,3 +212,58 @@ public class QuadMaterial extends Material {
         setTexture("tex" , tex , 0);
     }
 }
+
+public class GBufferMaterial extends Material {
+    public GBufferMaterial(String frag) {
+        super(frag);
+    }
+
+    public GBufferMaterial(String frag, String vert) {
+        super(frag, vert);
+    }    
+
+    public void run(GameObject go) {
+        setGameobject(go);
+
+        Matrix4 model = gameobject.localToWorld();
+        Matrix4 view = main_camera.getViewMatrix();
+        Matrix4 project = main_camera.getProjectionMatrix();
+        
+        setMatrix4ToUniform("modelMatrix", model);
+        setMatrix4ToUniform("viewMatrix", view);
+        setMatrix4ToUniform("projectMatrix", project);
+        
+    }
+
+    void cleanup() {
+
+    }
+}
+
+public class RSMBufferMaterial extends Material {
+    public RSMBufferMaterial(String frag) {
+        super(frag);
+    }
+
+    public RSMBufferMaterial(String frag, String vert) {
+        super(frag, vert);
+    }    
+
+    public void run(GameObject go) {
+        setGameobject(go);
+
+        Matrix4 model = gameobject.localToWorld();
+        Matrix4 view = main_camera.getViewMatrix();
+        Matrix4 lightView = main_light.lookAt();
+        Matrix4 lightProject = Matrix4.Ortho(-500,500,-500,500,0.1,1000);
+        
+        setMatrix4ToUniform("modelMatrix", model);
+        setMatrix4ToUniform("viewMatrix", view);
+        setMatrix4ToUniform("lightVPMatrix", lightProject.mult(lightView));
+        
+    }
+
+    void cleanup() {
+
+    }
+}

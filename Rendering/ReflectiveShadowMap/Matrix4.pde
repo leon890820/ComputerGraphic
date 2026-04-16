@@ -179,6 +179,43 @@ public static class Matrix4 {
         // 這裡先給你一個占位，避免你直接貼上後忘記。
         throw new RuntimeException("Replace Inverse() with a tested column-major version.");
     }
+    
+    public static Matrix4 Ortho(float left, float right,
+                           float bottom, float top,
+                           float near, float far) {
+
+        Matrix4 out = Matrix4.Identity();
+    
+        out.set(0, 0, 2.0f / (right - left));
+        out.set(1, 1, 2.0f / (top - bottom));
+        out.set(2, 2, -2.0f / (far - near));
+    
+        out.set(0, 3, -(right + left) / (right - left));
+        out.set(1, 3, -(top + bottom) / (top - bottom));
+        out.set(2, 3, -(far + near) / (far - near));
+    
+        return out;
+    }
+    public static Matrix4 LookAt(Vector3 eye, Vector3 target, Vector3 up) {
+
+        Vector3 z = eye.sub(target).unit_vector();   // forward
+        Vector3 x = Vector3.cross(up, z).unit_vector(); // right
+        Vector3 y = Vector3.cross(z, x); // up
+    
+        Matrix4 out = Matrix4.Identity();
+    
+        // rotation
+        out.set(0, 0, x.x()); out.set(0, 1, x.y()); out.set(0, 2, x.z());
+        out.set(1, 0, y.x()); out.set(1, 1, y.y()); out.set(1, 2, y.z());
+        out.set(2, 0, z.x()); out.set(2, 1, z.y()); out.set(2, 2, z.z());
+    
+        // translation
+        out.set(0, 3, -Vector3.dot(x, eye));
+        out.set(1, 3, -Vector3.dot(y, eye));
+        out.set(2, 3, -Vector3.dot(z, eye));
+    
+        return out;
+    }
 
     @Override
     public String toString() {
