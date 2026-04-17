@@ -1,12 +1,9 @@
 public abstract class GameObject {
     String name;
     Transform transform;
-    Mesh mesh;
-    Material material;
-
+    
+    MeshFilter meshFilter;
     ArrayList<MeshRenderer> meshRenderers;
-
-    boolean[] hasProperties = new boolean[4];
 
     public GameObject() {
         transform = new Transform();
@@ -55,12 +52,11 @@ public abstract class GameObject {
     }
 
     public GameObject setMesh(Mesh m) {
-        this.mesh = m;
-        return this;
-    }
-
-    public GameObject setMaterial(Material m) {
-        material = m;
+        if (meshFilter == null) {
+            meshFilter = new MeshFilter(m);
+        } else {
+            meshFilter.setMesh(m);
+        }
         return this;
     }
 
@@ -97,7 +93,15 @@ public abstract class GameObject {
     public void run() {
         for (MeshRenderer mr : meshRenderers) {
             if (mr != null) {
-                mr.render();
+                mr.render(this);
+            }
+        }
+    }
+
+    public void runWithMaterial(Material overrideMaterial) {
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.render(this, overrideMaterial);
             }
         }
     }
@@ -105,7 +109,15 @@ public abstract class GameObject {
     public void debugRun() {
         for (MeshRenderer mr : meshRenderers) {
             if (mr != null) {
-                mr.debugRender();
+                mr.debugRender(this);
+            }
+        }
+    }
+
+    public void debugRunWithMaterial(Material overrideMaterial) {
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.debugRender(this, overrideMaterial);
             }
         }
     }
@@ -134,19 +146,34 @@ public abstract class GameObject {
         return main_camera.Matrix().mult(localToWorld());
     }
 
-    public void buildSubMeshRenderers() {
+    public void buildSubMeshRenderers(Material defaultMaterial) {
         clearMeshRenderers();
+
+        if (meshFilter == null) {
+            println("[GameObject] buildSubMeshRenderers failed: meshFilter is null");
+            return;
+        }
+
+        Mesh mesh = meshFilter.getMesh();
         ArrayList<SubMesh> subs = mesh.getAllSubMeshes();
 
         for (SubMesh sub : subs) {
-            MeshRenderer mr = new MeshRenderer(mesh, sub, material, this);
+            MeshRenderer mr = new MeshRenderer(sub, defaultMaterial);
+            mr.initialize();
             meshRenderers.add(mr);
         }
 
         println("[GameObject] buildSubMeshRenderers success: " + meshRenderers.size());
     }
-}
 
+    public void setMaterial(Material mat) {
+        for (MeshRenderer mr : meshRenderers) {
+            if (mr != null) {
+                mr.setMaterial(mat);
+            }
+        }
+    }
+}
 
 public class PhongObject extends GameObject {
 
@@ -154,20 +181,15 @@ public class PhongObject extends GameObject {
     }
 
     public PhongObject(String name, Material mat) {
-        mesh = new Mesh(name);        
-        hasProperties = new boolean[]{true, true, true, false};
-        material = mat.setGameobject(this);
-        buildSubMeshRenderers();
-        
+        setMesh(new ObjLoader().load(name));
+        buildSubMeshRenderers(mat);
     }
 }
 
 public class Quad extends GameObject {
 
     public Quad(Material mat) {
-        mesh = new Mesh("Meshes/quad");        
-        hasProperties = new boolean[]{true,false,true,false};
-        material = mat.setGameobject(this); 
-        buildSubMeshRenderers();
+        setMesh(new ObjLoader().load("Meshes/quad"));
+        buildSubMeshRenderers(mat);
     }
 }

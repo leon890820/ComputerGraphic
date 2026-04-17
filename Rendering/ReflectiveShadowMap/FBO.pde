@@ -2,7 +2,6 @@ public class FBO {
     IntBuffer fbo;
     IntBuffer rbo;
     Texture[] tex;
-    Texture depthtex;
 
     int fboWidth;
     int fboHeight;

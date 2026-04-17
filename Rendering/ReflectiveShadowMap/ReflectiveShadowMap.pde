@@ -28,7 +28,7 @@ static int GH_MAX_RECURSION = 4;
 //Gameplay
 static float GH_MOUSE_SENSITIVITY = 0.005f;
 static float GH_MOUSE_SMOOTH = 0.5f;
-static float GH_WALK_SPEED = 1.0f;
+static float GH_WALK_SPEED = 5.0f;
 static float GH_WALK_ACCEL = 50.0f;
 static float GH_BOB_FREQ = 8.0f;
 static float GH_BOB_OFFS = 0.015f;
@@ -48,6 +48,9 @@ Light main_light;
 
 GBufferMaterial gBufferMaterial;
 RSMBufferMaterial rsmBufferMaterial;
+ShadingWithRSMMaterial shadingWithRSMMaterial;
+PhongMaterial phongMataterial;
+
 PhongObject sponza;
 
 PJOGL pgl;
@@ -59,13 +62,18 @@ Quad quad;
 
 FBO GBuffer;
 FBO RSMBuffer;
+FBO ShadingRSM;
+
+SSBO ssbo;
+
+int VPL_NUM = 128;
 
 float a = -PI/4;
 float time = 0.0;
 
 void setup() {
-    size(900, 900, P3D);
-    randomSeed(0);
+    size(1024, 1024, P3D);
+    //randomSeed(0);
 
     pgl = (PJOGL) beginPGL();  
     gl = pgl.gl.getGL2ES2();
@@ -75,6 +83,7 @@ void setup() {
     cameraSetting();
     setMaterial();
     initSetting();
+
 }
 
 
@@ -83,15 +92,23 @@ void draw() {
     move();   
     
     GBuffer.bindFrameBuffer();
-    sponza.run();
-    GBuffer.unbindFrameBuffer(width,height);
-
+    sponza.runWithMaterial(gBufferMaterial);
+    GBuffer.unbindFrameBuffer(width, height);
+    
+    RSMBuffer.bindFrameBuffer();
+    sponza.runWithMaterial(rsmBufferMaterial);
+    RSMBuffer.unbindFrameBuffer(width, height);
+    
+    ShadingRSM.bindFrameBuffer();
+    quad.runWithMaterial(shadingWithRSMMaterial);
+    ShadingRSM.unbindFrameBuffer(width, height);
+    
     background(0);
     quad.run();
     
-    main_light.setLightdirection(200 * cos(a), -100 ,200 * sin(a) );    
+    main_light.setLightdirection(-0.5, -1 ,-2 );    
 
-
+    //a += 0.01;
     
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
@@ -104,34 +121,59 @@ public void initSetting() {
 }
 
 void setGameObject() {
-    sponza = new PhongObject("../../Model/sponza/Scale300Sponza", gBufferMaterial);  
+    sponza = new PhongObject("../../Model/sponza/Scale300Sponza", phongMataterial);  
     quad = new Quad(quadMaterial);
 }
 
 void setMaterial() {  
     GBuffer = new FBO(width, height, 3, gl3.GL_LINEAR);
     RSMBuffer = new FBO(width, height, 3, gl3.GL_LINEAR);
+    ShadingRSM = new FBO(width, height,1,gl3.GL_LINEAR);
     
     gBufferMaterial = new GBufferMaterial("Shaders/GBuffer.frag", "Shaders/GBuffer.vert");
     rsmBufferMaterial = new RSMBufferMaterial("Shaders/RSMBuffer.frag", "Shaders/RSMBuffer.vert");
-
+    shadingWithRSMMaterial = new ShadingWithRSMMaterial("Shaders/ShadingWithRSM.frag", "Shaders/ShadingWithRSM.vert");
+    phongMataterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
+    
+    shadingWithRSMMaterial.setAlbedoTexture(GBuffer.tex[0])
+                          .setNormalTexture(GBuffer.tex[1])
+                          .setPositionTexture(GBuffer.tex[2])
+                          .setRSMFluxTexture(RSMBuffer.tex[0])
+                          .setRSMNormalTexture(RSMBuffer.tex[1])
+                          .setRSMPositionTexture(RSMBuffer.tex[2]);
     
     quadMaterial = new QuadMaterial("Shaders/quad.frag", "Shaders/quad.vert");
-    quadMaterial.setTexture(GBuffer.tex[0]);
-    
-   
+    quadMaterial.setTexture(ShadingRSM.tex[0]);
+      
+    float[] weight = initVPLsSampleCoordsAndWeights();  
+    ssbo = new SSBO(0, weight);
 }
 
+public float[] initVPLsSampleCoordsAndWeights(){
+    float[] weight = new float[VPL_NUM * 4];
+
+    for(int i = 0; i < VPL_NUM; i++){
+        float r = sqrt(random(0,1));
+        float theta = 2 * PI * random(0,1);
+
+        weight[i * 4 + 0] = r * cos(theta);
+        weight[i * 4 + 1] = r * sin(theta);
+        weight[i * 4 + 2] = 1.0;//r * r;   // weight
+        weight[i * 4 + 3] = 0.0;
+    }
+
+    return weight;
+}
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPosition(0.0, -500, 800.0).setEular(-0.0, 0.0, 0.0);
+    main_camera.setPosition(0.0, -300, 800.0).setEular(-0.1, 0.0, 0.0);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
     //main_camera.ortho(-1000,1000,-1000,1000,0.1,1000);
 }
 
 public void lightSetting() {
-    main_light = new Light(new Vector3(0, 0, 0), new Vector3(-200 * cos(a), 500, -200 * sin(a)), new Vector3(0.8));
+    main_light = new Light(new Vector3(0, 500, 1000), new Vector3(-200 * cos(a), -500, -200 * sin(a)), new Vector3(0.8));
     main_light.setScale(2, 2, 2);
 }
 

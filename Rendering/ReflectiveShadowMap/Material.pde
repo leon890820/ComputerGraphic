@@ -2,7 +2,6 @@ import java.util.HashMap;
 
 public abstract class Material {
     PShader shader;
-    GameObject gameobject;
 
     private HashMap<String, Integer> uniformCache = new HashMap<String, Integer>();
     private FloatBuffer matrixBuffer = allocateDirectFloatBuffer(16);
@@ -13,11 +12,6 @@ public abstract class Material {
 
     public Material(String frag, String vert) {
         shader = loadShader(frag, vert);
-    }
-
-    public Material setGameobject(GameObject g) {
-        gameobject = g;
-        return this;
     }
 
     protected int getUniformLocation(String name) {
@@ -43,16 +37,15 @@ public abstract class Material {
     }
 
     public void setTexture(String name, Texture tex, int unit) {
-        if (tex == null || tex.tex == null) {
-            println("[Material] Warning: texture is null -> " + name);
+        if (tex == null || tex.tex == null || !tex.isUploaded()) {
+            println("[Material] Warning: texture is null or not uploaded -> " + name);
             return;
         }
 
         int location = getUniformLocation(name);
         if (location < 0) return;
 
-        gl3.glActiveTexture(gl3.GL_TEXTURE0 + unit);
-        gl3.glBindTexture(gl3.GL_TEXTURE_2D, tex.tex.get(0));
+        tex.bind(unit);
         gl3.glUniform1i(location, unit);
     }
 
@@ -120,17 +113,16 @@ public abstract class Material {
         shader.unbind();
     }
 
-    abstract void run(GameObject go);
+    abstract void run(GameObject go, SubMesh subMesh);
 
     void cleanup() {
     }
 }
 
-
 public class PhongMaterial extends Material {
     Vector3 albedo = new Vector3(0.0f);
     Matrix4 light_MVP;
-    Texture texture;
+    Texture texture;   // 可選：手動指定時用
 
     public PhongMaterial(String frag) {
         super(frag);
@@ -160,16 +152,14 @@ public class PhongMaterial extends Material {
         return this;
     }
 
-    public void run(GameObject go) {
-        setGameobject(go);
-
-        Matrix4 model = gameobject.localToWorld();
-        Matrix4 mvp = gameobject.MVP();
+    public void run(GameObject go, SubMesh subMesh) {
+        Matrix4 model = go.localToWorld();
+        Matrix4 mvp = go.MVP();
 
         setMatrix4ToUniform("MVP", mvp);
         setMatrix4ToUniform("modelMatrix", model);
 
-        setVector3ToUniform("light_dir", main_light.light_dir);
+        setVector3ToUniform("light_dir", main_light.getLightdirection());
         setVector3ToUniform("ambient_light", AMBIENT_LIGHT);
         setVector3ToUniform("light_color", main_light.light_color);
         setVector3ToUniform("view_pos", main_camera.transform.position);
@@ -179,15 +169,19 @@ public class PhongMaterial extends Material {
             setMatrix4ToUniform("light_MVP", light_MVP);
         }
 
-        if (texture != null && texture.tex != null) {
-            setTexture("tex", texture, 0);
+        Texture useTex = texture;
+
+        if (useTex == null && subMesh != null) {
+            useTex = subMesh.textureKa;
+        }
+
+        if (useTex != null && useTex.isUploaded()) {
+            setTexture("tex", useTex, 0);
         }
     }
 
     void cleanup() {
-        if (texture != null && texture.tex != null) {
-            unbindTexture(0);
-        }
+        unbindTexture(0);
     }
 }
 
@@ -198,6 +192,7 @@ public class QuadMaterial extends Material {
     public QuadMaterial(String frag) {
         super(frag);
     }
+
     public QuadMaterial(String frag, String vert) {
         super(frag, vert);
     }
@@ -206,10 +201,18 @@ public class QuadMaterial extends Material {
         tex = t;
         return this;
     }
-    
-    public void run(GameObject go) {
-        setGameobject(go); 
-        setTexture("tex" , tex , 0);
+
+    @Override
+    public void run(GameObject go, SubMesh subMesh) {
+        if (tex != null && tex.isUploaded()) {
+            setTexture("tex", tex, 0);
+        }
+    }
+
+    void cleanup() {
+        if (tex != null && tex.tex != null) {
+            unbindTexture(0);
+        }
     }
 }
 
@@ -220,23 +223,24 @@ public class GBufferMaterial extends Material {
 
     public GBufferMaterial(String frag, String vert) {
         super(frag, vert);
-    }    
+    }
 
-    public void run(GameObject go) {
-        setGameobject(go);
-
-        Matrix4 model = gameobject.localToWorld();
+    public void run(GameObject go, SubMesh subMesh) {
+        Matrix4 model = go.localToWorld();
         Matrix4 view = main_camera.getViewMatrix();
         Matrix4 project = main_camera.getProjectionMatrix();
-        
+
         setMatrix4ToUniform("modelMatrix", model);
         setMatrix4ToUniform("viewMatrix", view);
         setMatrix4ToUniform("projectMatrix", project);
-        
+
+        if (subMesh != null && subMesh.textureKa != null && subMesh.textureKa.isUploaded()) {
+            setTexture("tex", subMesh.textureKa, 0);
+        }
     }
 
     void cleanup() {
-
+        unbindTexture(0);
     }
 }
 
@@ -247,23 +251,95 @@ public class RSMBufferMaterial extends Material {
 
     public RSMBufferMaterial(String frag, String vert) {
         super(frag, vert);
-    }    
+    }
 
-    public void run(GameObject go) {
-        setGameobject(go);
-
-        Matrix4 model = gameobject.localToWorld();
+    public void run(GameObject go, SubMesh subMesh) {
+        Matrix4 model = go.localToWorld();
         Matrix4 view = main_camera.getViewMatrix();
         Matrix4 lightView = main_light.lookAt();
-        Matrix4 lightProject = Matrix4.Ortho(-500,500,-500,500,0.1,1000);
-        
+        Matrix4 lightProject = Matrix4.Ortho(-1000, 1000, -1000, 1000, 0.1, 2000);
+
         setMatrix4ToUniform("modelMatrix", model);
         setMatrix4ToUniform("viewMatrix", view);
         setMatrix4ToUniform("lightVPMatrix", lightProject.mult(lightView));
         
+        if (subMesh != null && subMesh.textureKa != null && subMesh.textureKa.isUploaded()) {
+            setTexture("tex", subMesh.textureKa, 0);
+        }
     }
 
     void cleanup() {
+    }
+}
 
+public class ShadingWithRSMMaterial extends Material {
+    Texture u_AlbedoTexture = new Texture(1,1);
+    Texture u_NormalTexture = new Texture(1,1);
+    Texture u_PositionTexture = new Texture(1,1);
+    Texture u_RSMFluxTexture = new Texture(1,1);
+    Texture u_RSMNormalTexture = new Texture(1,1);
+    Texture u_RSMPositionTexture = new Texture(1,1);
+        
+    int u_MaxSampleRadius = 50;
+       
+    
+    public ShadingWithRSMMaterial(String frag) {
+        super(frag);
+    }
+
+    public ShadingWithRSMMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+    
+    public ShadingWithRSMMaterial setAlbedoTexture(Texture texture){
+        u_AlbedoTexture = texture;
+        return this;
+    }
+    
+    public ShadingWithRSMMaterial setNormalTexture(Texture texture){
+        u_NormalTexture = texture;
+        return this;
+    }
+    
+    public ShadingWithRSMMaterial setPositionTexture(Texture texture){
+        u_PositionTexture = texture;
+        return this;
+    }
+    
+    public ShadingWithRSMMaterial setRSMFluxTexture(Texture texture){
+        u_RSMFluxTexture = texture;
+        return this;
+    }
+    
+    public ShadingWithRSMMaterial setRSMNormalTexture(Texture texture){
+        u_RSMNormalTexture = texture;
+        return this;
+    }
+    
+    public ShadingWithRSMMaterial setRSMPositionTexture(Texture texture){
+        u_RSMPositionTexture = texture;
+        return this;
+    }
+
+    public void run(GameObject go, SubMesh subMesh) {
+        setTexture("u_AlbedoTexture", u_AlbedoTexture, 0);
+        setTexture("u_NormalTexture", u_NormalTexture, 1);
+        setTexture("u_PositionTexture", u_PositionTexture, 2);
+        setTexture("u_RSMFluxTexture", u_RSMFluxTexture, 3);
+        setTexture("u_RSMNormalTexture", u_RSMNormalTexture, 4);
+        setTexture("u_RSMPositionTexture", u_RSMPositionTexture, 5);
+        
+        Matrix4 lightView = main_light.lookAt();
+        Matrix4 lightProject = Matrix4.Ortho(-1000, 1000, -1000, 1000, 0.1, 2000);
+        Matrix4 view = main_camera.getViewMatrix();
+        
+        setMatrix4ToUniform("u_LightVPMatrixMulInverseCameraViewMatrix", lightProject.mult(lightView).mult(view.Inverse()));        
+        setIntToUniform("u_MaxSampleRadius", u_MaxSampleRadius);
+        setIntToUniform("u_RSMSize", width);
+        setIntToUniform("u_VPLNum", VPL_NUM);
+        setVector3ToUniform("u_LightDirInViewSpace", view.transformDirection(main_light.getLightdirection()));
+    }
+
+    void cleanup() {
     }
 }

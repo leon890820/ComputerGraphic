@@ -25,6 +25,10 @@ public class Light extends GameObject{
         return this;
     }
     
+    public Vector3 getLightdirection(){
+        return light_dir.unit_vector();
+    }
+    
     public Light setLightdirection(float x,float y,float z){
         this.light_dir.set(x,y,z);
         return this;

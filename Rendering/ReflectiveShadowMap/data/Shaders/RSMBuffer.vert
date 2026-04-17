@@ -2,7 +2,6 @@
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
-uniform mat4 projectMatrix;
 
 uniform mat4 lightVPMatrix;
 
