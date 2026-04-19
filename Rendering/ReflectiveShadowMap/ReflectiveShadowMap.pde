@@ -17,7 +17,7 @@ static int GH_SCREEN_WIDTH = 1280;
 static int GH_SCREEN_HEIGHT = 720;
 static int GH_SCREEN_X = 50;
 static int GH_SCREEN_Y = 50;
-static float GH_FOV = 30.0f;
+static float GH_FOV = 45.0f;
 static float GH_NEAR_MIN = 1e-3f;
 static float GH_NEAR_MAX = 1e-1f;
 static float GH_FAR = 10000.0f;
@@ -66,10 +66,12 @@ FBO ShadingRSM;
 
 SSBO ssbo;
 
-int VPL_NUM = 128;
+int VPL_NUM = 32;
 
 float a = -PI/4;
 float time = 0.0;
+
+boolean RTX = true;
 
 void setup() {
     size(1024, 1024, P3D);
@@ -105,11 +107,13 @@ void draw() {
     
     background(0);
     quad.run();
-    
-    main_light.setLightdirection(-0.5, -1 ,-2 );    
+        
+    //main_light.setLightdirection(-0.5, -1 ,-2 );    
 
     //a += 0.01;
     
+    //main_light.setLightEularToDirection(main_camera.transform.eular.x,main_camera.transform.eular.y,main_camera.transform.eular.y);
+    //main_light.setPosition(main_camera.transform.position.x,main_camera.transform.position.y,main_camera.transform.position.z);
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
 }
@@ -126,9 +130,9 @@ void setGameObject() {
 }
 
 void setMaterial() {  
-    GBuffer = new FBO(width, height, 3, gl3.GL_LINEAR);
-    RSMBuffer = new FBO(width, height, 3, gl3.GL_LINEAR);
-    ShadingRSM = new FBO(width, height,1,gl3.GL_LINEAR);
+    GBuffer = new FBO(width, height, 3, gl3.GL_LINEAR, false);
+    RSMBuffer = new FBO(width, height, 3, gl3.GL_LINEAR, true);
+    ShadingRSM = new FBO(width, height,1,gl3.GL_LINEAR, false);
     
     gBufferMaterial = new GBufferMaterial("Shaders/GBuffer.frag", "Shaders/GBuffer.vert");
     rsmBufferMaterial = new RSMBufferMaterial("Shaders/RSMBuffer.frag", "Shaders/RSMBuffer.vert");
@@ -140,7 +144,8 @@ void setMaterial() {
                           .setPositionTexture(GBuffer.tex[2])
                           .setRSMFluxTexture(RSMBuffer.tex[0])
                           .setRSMNormalTexture(RSMBuffer.tex[1])
-                          .setRSMPositionTexture(RSMBuffer.tex[2]);
+                          .setRSMPositionTexture(RSMBuffer.tex[2])
+                          .setRSMDepthTexture(RSMBuffer.getDepthTexture());
     
     quadMaterial = new QuadMaterial("Shaders/quad.frag", "Shaders/quad.vert");
     quadMaterial.setTexture(ShadingRSM.tex[0]);
@@ -158,7 +163,7 @@ public float[] initVPLsSampleCoordsAndWeights(){
 
         weight[i * 4 + 0] = r * cos(theta);
         weight[i * 4 + 1] = r * sin(theta);
-        weight[i * 4 + 2] = 1.0;//r * r;   // weight
+        weight[i * 4 + 2] = r * r;   // weight
         weight[i * 4 + 3] = 0.0;
     }
 
@@ -173,7 +178,7 @@ public void cameraSetting() {
 }
 
 public void lightSetting() {
-    main_light = new Light(new Vector3(0, 500, 1000), new Vector3(-200 * cos(a), -500, -200 * sin(a)), new Vector3(0.8));
+    main_light = new Light(new Vector3(125, 141, 1280), new Vector3(-200 * cos(a), -500, -200 * sin(a)), new Vector3(0.8));
     main_light.setScale(2, 2, 2);
 }
 
@@ -192,7 +197,9 @@ void keyPressed() {
         key_input[3]=true;
     }
 
-    
+    if(key=='R'||key=='r'){
+        RTX = !RTX;
+    }
 }
 
 void keyReleased() {

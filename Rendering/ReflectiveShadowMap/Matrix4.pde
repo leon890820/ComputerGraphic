@@ -316,6 +316,19 @@ public static class Matrix4 {
         return inv.div(det);
     }
     
+    public static Matrix4 Projection(float fov, float aspect, float near, float far){
+        float fovRad = fov * PI / 180.0f;
+        float f = 1.0f / tan(fovRad / 2.0f);
+        Matrix4 projection = Matrix4.Zero();
+        projection.set(0, 0, f / aspect);
+        projection.set(1, 1, f);
+        projection.set(2, 2, (far + near) / (near - far));
+        projection.set(2, 3, (2.0f * far * near) / (near - far));
+        projection.set(3, 2, -1.0f);
+        projection.set(3, 3, 0.0f);
+        
+        return projection;
+    }
     
     public static Matrix4 Ortho(float left, float right,
                            float bottom, float top,

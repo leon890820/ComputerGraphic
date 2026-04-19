@@ -257,7 +257,7 @@ public class RSMBufferMaterial extends Material {
         Matrix4 model = go.localToWorld();
         Matrix4 view = main_camera.getViewMatrix();
         Matrix4 lightView = main_light.lookAt();
-        Matrix4 lightProject = Matrix4.Ortho(-1000, 1000, -1000, 1000, 0.1, 2000);
+        Matrix4 lightProject = Matrix4.Projection(60.0,1.0,0.01,3000);//Matrix4.Ortho(-1000, 1000, -1000, 1000, 0.1, 2000);
 
         setMatrix4ToUniform("modelMatrix", model);
         setMatrix4ToUniform("viewMatrix", view);
@@ -279,8 +279,9 @@ public class ShadingWithRSMMaterial extends Material {
     Texture u_RSMFluxTexture = new Texture(1,1);
     Texture u_RSMNormalTexture = new Texture(1,1);
     Texture u_RSMPositionTexture = new Texture(1,1);
+    Texture u_RSMDepthTexture = new Texture(1,1);
         
-    int u_MaxSampleRadius = 50;
+    float u_MaxSampleRadius = 100;
        
     
     public ShadingWithRSMMaterial(String frag) {
@@ -320,6 +321,11 @@ public class ShadingWithRSMMaterial extends Material {
         u_RSMPositionTexture = texture;
         return this;
     }
+    
+    public ShadingWithRSMMaterial setRSMDepthTexture(Texture texture){
+        u_RSMDepthTexture = texture;
+        return this;
+    }
 
     public void run(GameObject go, SubMesh subMesh) {
         setTexture("u_AlbedoTexture", u_AlbedoTexture, 0);
@@ -328,16 +334,20 @@ public class ShadingWithRSMMaterial extends Material {
         setTexture("u_RSMFluxTexture", u_RSMFluxTexture, 3);
         setTexture("u_RSMNormalTexture", u_RSMNormalTexture, 4);
         setTexture("u_RSMPositionTexture", u_RSMPositionTexture, 5);
+        setTexture("u_RSMDepthTexture", u_RSMDepthTexture, 6);
         
         Matrix4 lightView = main_light.lookAt();
-        Matrix4 lightProject = Matrix4.Ortho(-1000, 1000, -1000, 1000, 0.1, 2000);
+        Matrix4 lightProject = Matrix4.Projection(60.0,1.0,0.01,3000);//Matrix4.Ortho(-1000, 1000, -1000, 1000, 0.1, 2000);
         Matrix4 view = main_camera.getViewMatrix();
         
         setMatrix4ToUniform("u_LightVPMatrixMulInverseCameraViewMatrix", lightProject.mult(lightView).mult(view.Inverse()));        
-        setIntToUniform("u_MaxSampleRadius", u_MaxSampleRadius);
-        setIntToUniform("u_RSMSize", width);
+        setFloatToUniform("u_MaxSampleRadius", u_MaxSampleRadius);
+        setIntToUniform("u_RSMSize", height);
         setIntToUniform("u_VPLNum", VPL_NUM);
         setVector3ToUniform("u_LightDirInViewSpace", view.transformDirection(main_light.getLightdirection()));
+        setVector3ToUniform("u_LightPosInViewSpace", view.transformPoint(main_light.getPosition()));
+        setIntToUniform("RTX", RTX ? 1 : 0);
+        
     }
 
     void cleanup() {

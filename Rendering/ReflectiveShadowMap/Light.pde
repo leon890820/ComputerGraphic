@@ -34,6 +34,16 @@ public class Light extends GameObject{
         return this;
     }
     
+    public Light setLightEularToDirection(float x,float y,float z){      
+        Matrix4 m = Matrix4.Identity();
+        m = m.mult(Matrix4.RotY(y))
+             .mult(Matrix4.RotX(x))
+             .mult(Matrix4.RotZ(z));
+        Vector3 forward = m.transformDirection(new Vector3(0, 0, -1));
+        this.light_dir.set(forward.x,forward.y,forward.z);
+        return this;
+    }
+    
     public Matrix4 lookAt(){
         return Matrix4.LookAt(transform.position, transform.position.add(light_dir), new Vector3(0,1,0));
     }

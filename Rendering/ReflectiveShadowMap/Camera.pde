@@ -111,9 +111,6 @@ public class Camera extends GameObject {
         return invProjection;
     }
 
-    void draw() {
-    }
-
     Matrix4 Matrix() {
         rebuildVPIfNeeded();
         return cachedVP;
