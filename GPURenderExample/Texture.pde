@@ -197,3 +197,61 @@ public class Texture {
         height = 0;
     }
 }
+
+
+public class TextureCube {
+    IntBuffer tex;
+    int size;
+
+    public TextureCube(int size, int internalFormat, int format, int type, int filter) {
+        this.size = size;
+        tex = allocateDirectIntBuffer(1);
+
+        gl3.glGenTextures(1, tex);
+        gl3.glBindTexture(gl3.GL_TEXTURE_CUBE_MAP, tex.get(0));
+
+        for (int i = 0; i < 6; i++) {
+            gl3.glTexImage2D(
+                gl3.GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0,
+                internalFormat,
+                size,
+                size,
+                0,
+                format,
+                type,
+                null
+            );
+        }
+
+        gl3.glTexParameteri(gl3.GL_TEXTURE_CUBE_MAP, gl3.GL_TEXTURE_MIN_FILTER, filter);
+        gl3.glTexParameteri(gl3.GL_TEXTURE_CUBE_MAP, gl3.GL_TEXTURE_MAG_FILTER, filter);
+        gl3.glTexParameteri(gl3.GL_TEXTURE_CUBE_MAP, gl3.GL_TEXTURE_WRAP_S, gl3.GL_CLAMP_TO_EDGE);
+        gl3.glTexParameteri(gl3.GL_TEXTURE_CUBE_MAP, gl3.GL_TEXTURE_WRAP_T, gl3.GL_CLAMP_TO_EDGE);
+        gl3.glTexParameteri(gl3.GL_TEXTURE_CUBE_MAP, gl3.GL_TEXTURE_WRAP_R, gl3.GL_CLAMP_TO_EDGE);
+
+        gl3.glBindTexture(gl3.GL_TEXTURE_CUBE_MAP, 0);
+    }
+
+    public void bind(int unit) {
+        gl3.glActiveTexture(gl3.GL_TEXTURE0 + unit);
+        gl3.glBindTexture(gl3.GL_TEXTURE_CUBE_MAP, tex.get(0));
+    }
+
+    public void unbind(int unit) {
+        gl3.glActiveTexture(gl3.GL_TEXTURE0 + unit);
+        gl3.glBindTexture(gl3.GL_TEXTURE_CUBE_MAP, 0);
+    }
+
+    public boolean isUploaded() {
+        return tex != null && tex.get(0) != 0;
+    }
+
+    public void dispose() {
+        if (tex != null) {
+            tex.rewind();
+            gl3.glDeleteTextures(1, tex);
+            tex = null;
+        }
+    }
+}

@@ -162,3 +162,121 @@ public class FBO {
         }
     }
 }
+
+public class CubeMapFBO {
+    IntBuffer fbo;
+
+    TextureCube[] colorTex;
+    TextureCube depthTex;
+
+    int size;
+    int colorCount;
+
+    public CubeMapFBO(int size, int colorCount, boolean useDepthTexture) {
+        this.size = size;
+        this.colorCount = colorCount;
+
+        fbo = allocateDirectIntBuffer(1);
+        gl3.glGenFramebuffers(1, fbo);
+
+        colorTex = new TextureCube[colorCount];
+        for (int i = 0; i < colorCount; i++) {
+            colorTex[i] = new TextureCube(
+                size,
+                gl3.GL_RGBA32F,
+                gl3.GL_RGBA,
+                gl3.GL_FLOAT,
+                gl3.GL_LINEAR
+            );
+        }
+
+        if (useDepthTexture) {
+            depthTex = new TextureCube(
+                size,
+                gl3.GL_DEPTH_COMPONENT24,
+                gl3.GL_DEPTH_COMPONENT,
+                gl3.GL_FLOAT,
+                gl3.GL_NEAREST
+            );
+        }
+    }
+
+    public void bindFace(int faceIndex) {
+        gl3.glBindFramebuffer(gl3.GL_FRAMEBUFFER, fbo.get(0));
+        gl3.glViewport(0, 0, size, size);
+
+        int[] drawBuffers = new int[colorCount];
+
+        for (int i = 0; i < colorCount; i++) {
+            gl3.glFramebufferTexture2D(
+                gl3.GL_FRAMEBUFFER,
+                gl3.GL_COLOR_ATTACHMENT0 + i,
+                gl3.GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIndex,
+                colorTex[i].tex.get(0),
+                0
+            );
+            drawBuffers[i] = gl3.GL_COLOR_ATTACHMENT0 + i;
+        }
+
+        if (depthTex != null) {
+            gl3.glFramebufferTexture2D(
+                gl3.GL_FRAMEBUFFER,
+                gl3.GL_DEPTH_ATTACHMENT,
+                gl3.GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIndex,
+                depthTex.tex.get(0),
+                0
+            );
+        }
+
+        if (colorCount > 0) {
+            gl3.glDrawBuffers(colorCount, drawBuffers, 0);
+        } else {
+            gl3.glDrawBuffer(gl3.GL_NONE);
+            gl3.glReadBuffer(gl3.GL_NONE);
+        }
+
+        int status = gl3.glCheckFramebufferStatus(gl3.GL_FRAMEBUFFER);
+        if (status != gl3.GL_FRAMEBUFFER_COMPLETE) {
+            println("[CubeMapFBO] incomplete on face " + faceIndex + " status = " + status);
+        }
+
+        gl3.glClear(gl3.GL_COLOR_BUFFER_BIT | gl3.GL_DEPTH_BUFFER_BIT);
+    }
+
+    public void unbind(int screenW, int screenH) {
+        gl3.glBindFramebuffer(gl3.GL_FRAMEBUFFER, 0);
+        gl3.glViewport(0, 0, screenW, screenH);
+    }
+
+    public TextureCube getColorTexture(int index) {
+        if (index < 0 || index >= colorCount) {
+            println("[CubeMapFBO] invalid color index: " + index);
+            return null;
+        }
+        return colorTex[index];
+    }
+
+    public TextureCube getDepthTexture() {
+        return depthTex;
+    }
+
+    public void dispose() {
+        if (colorTex != null) {
+            for (int i = 0; i < colorTex.length; i++) {
+                if (colorTex[i] != null) {
+                    colorTex[i].dispose();
+                }
+            }
+        }
+
+        if (depthTex != null) {
+            depthTex.dispose();
+        }
+
+        if (fbo != null) {
+            fbo.rewind();
+            gl3.glDeleteFramebuffers(1, fbo);
+            fbo = null;
+        }
+    }
+}

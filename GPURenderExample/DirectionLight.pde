@@ -31,7 +31,7 @@ public class DirectionalLight extends Light {
 
     
     @Override
-    public void setShaderParameter(){
+    public void setShaderParameter(LightMaterial material){
         Matrix4 view = getViewMatrix();
         Matrix4 project = getProjectionMatrix();
         material.setVector3ToUniform("light_color", light_color);
@@ -75,12 +75,12 @@ public class SpotLight extends Light {
     
 
     @Override
-    public void setShaderParameter() {
+    public void setShaderParameter(LightMaterial material) {
         Matrix4 view = getViewMatrix();
         Matrix4 project = getProjectionMatrix();
-        material.setVector3ToUniform("light_color", light_color);
-        material.setVector3ToUniform("light_dir", light_dir);
         material.setMatrix4ToUniform("lightSpaceMatrix", project.mult(view));
+        material.setVector3ToUniform("light_color", light_color);
+        material.setVector3ToUniform("light_dir", light_dir);       
         material.setFloatToUniform("lightNear", near);
         material.setFloatToUniform("lightFar", far);
         material.setTexture("shadowMap", shadowMap, 4);

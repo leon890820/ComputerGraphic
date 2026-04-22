@@ -121,7 +121,7 @@ public abstract class Material {
 
 public class PhongMaterial extends Material {
     Texture texture;   // 可選：手動指定時用
-
+    Light lightSource;
     public PhongMaterial(String frag) {
         super(frag);
     }
@@ -135,7 +135,10 @@ public class PhongMaterial extends Material {
         texture = t;
         return this;
     }
-    
+    public PhongMaterial setLight(Light l) {
+        lightSource = l;
+        return this;
+    }
 
     public void run(GameObject go, SubMesh subMesh) {
         Matrix4 model = go.localToWorld();
@@ -145,11 +148,12 @@ public class PhongMaterial extends Material {
         setMatrix4ToUniform("modelMatrix", model);
         
         setVector3ToUniform("ambient_light", AMBIENT_LIGHT);
-        setVector3ToUniform("light_color", main_light.light_color);
+        
         setVector3ToUniform("view_pos", main_camera.transform.position);     
         
-        setVector3ToUniform("light_dir", main_light.light_dir);
-        setVector3ToUniform("light_color", main_light.light_color);
+        setVector3ToUniform("light_color", lightSource.light_color);
+        setVector3ToUniform("light_dir", lightSource.light_dir);
+        setVector3ToUniform("light_color", lightSource.light_color);
         
         Texture useTex = texture;
 
@@ -196,23 +200,31 @@ public class LightMaterial extends Material {
     }
 
     @Override
-    public void run(GameObject go, SubMesh subMesh) {        
+    public void run(GameObject go, SubMesh subMesh) {
         setTexture("albedo", albedoTex, 0);
         setTexture("worldNormal", normalTex, 1);
         setTexture("worldPos", positionTex, 2);
+
         setVector3ToUniform("view_pos", main_camera.transform.position);
-        setVector3ToUniform("ambient_light", AMBIENT_LIGHT);                
-        main_light.setShaderParameter();
+        setVector3ToUniform("ambient_light", AMBIENT_LIGHT);
+
+        if (go instanceof Light) {
+            Light light = (Light) go;
+            light.setShaderParameter(this);
+        }
     }
 
+    @Override
     void cleanup() {
         unbindTexture(0);
-        
+        unbindTexture(1);
+        unbindTexture(2);
+        unbindTexture(4); // shadowMap 如果有綁
     }
 }
 
 public class ShadowMaterial extends Material {
-
+    Light lightSource;
 
     public ShadowMaterial(String frag) {
         super(frag);
@@ -221,14 +233,19 @@ public class ShadowMaterial extends Material {
     public ShadowMaterial(String frag, String vert) {
         super(frag, vert);
     }
+    
+    public ShadowMaterial setLight(Light l) {
+        lightSource = l;
+        return this;
+    }
 
     @Override
     public void run(GameObject go, SubMesh subMesh) {
         Matrix4 model = go.localToWorld();
-        Matrix4 view = main_light.getViewMatrix();
-        Matrix4 project = main_light.getProjectionMatrix();
+        Matrix4 view = lightSource.getViewMatrix();
+        Matrix4 project = lightSource.getProjectionMatrix();
         
-        setMatrix4ToUniform("Light_MVP", project.mult(view).mult(model));
+        setMatrix4ToUniform("lightSpaceMatrix", project.mult(view).mult(model));
     }
 
     void cleanup() {
