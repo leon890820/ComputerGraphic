@@ -173,6 +173,10 @@ public abstract class GameObject {
             }
         }
     }
+    public Material getMaterial() {
+        if (meshRenderers == null || meshRenderers.size() == 0) return null;
+        return meshRenderers.get(0).getMaterial();
+    }
 }
 
 public class PhongObject extends GameObject {

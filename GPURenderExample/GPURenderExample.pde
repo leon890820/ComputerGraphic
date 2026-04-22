@@ -58,10 +58,9 @@ PJOGL pgl;
 GL2ES2 gl;
 GL3 gl3;
 
-QuadMaterial quadMaterial;
-Quad quad;
 
 FBO ShadowBuffer;
+FBO PhongBuffer;
 
 float a = -PI/4;
 float time = 0.0;
@@ -94,11 +93,14 @@ void draw() {
     sponza.runWithMaterial(shadowMaterial);
     floor.runWithMaterial(shadowMaterial);
     ShadowBuffer.unbindFrameBuffer(width,height);
-
-    background(0);
+    
+    PhongBuffer.bindFrameBuffer();
     sponza.run();
     floor.run();
-    //quad.run();
+    PhongBuffer.unbindFrameBuffer(width,height);
+    
+    background(0);
+    main_light.run();
     
 
     a+=0.1;
@@ -118,22 +120,20 @@ void setGameObject() {
     sponza.setScale(1,1,1);
     floor = new PhongObject("Meshes/quad", floorMaterial);  
     floor.setEular(PI / 2,0,0).setScale(5,5,5).setPosition(0,0,0);
-    quad = new Quad(quadMaterial);
 }
 
 void setMaterial() {  
     ShadowBuffer = new FBO(width, height, 1, gl3.GL_LINEAR, true);
+    PhongBuffer = new FBO(width, height, 3, gl3.GL_LINEAR, true);
     
-    phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
-    phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5);
-    phongMaterial.setShadowMap(ShadowBuffer.depthTex);
-    
+    phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");    
     floorMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     floorTexture = new Texture("Textures/Floor.png");
     floorMaterial.setTexture(floorTexture);
-    floorMaterial.setShadowMap(ShadowBuffer.depthTex);
-    quadMaterial = new QuadMaterial("Shaders/quad.frag", "Shaders/quad.vert");
-    quadMaterial.setTexture(ShadowBuffer.tex[0]);
+    
+    main_light.setShadowMap(ShadowBuffer.depthTex);
+    
+    main_light.setAlbedoTex(PhongBuffer.tex[0]).setNormalTex(PhongBuffer.tex[1]).setPositionTex(PhongBuffer.tex[2]);
     
     shadowMaterial = new ShadowMaterial("Shaders/Shadow.frag", "Shaders/Shadow.vert");
 }

@@ -120,9 +120,7 @@ public abstract class Material {
 }
 
 public class PhongMaterial extends Material {
-    Vector3 albedo = new Vector3(0.0f);
     Texture texture;   // 可選：手動指定時用
-    Texture shadowMap;
 
     public PhongMaterial(String frag) {
         super(frag);
@@ -132,25 +130,12 @@ public class PhongMaterial extends Material {
         super(frag, vert);
     }
 
-    public PhongMaterial setAlbedo(Vector3 v) {
-        albedo = v;
-        return this;
-    }
-
-    public PhongMaterial setAlbedo(float x, float y, float z) {
-        albedo.set(x, y, z);
-        return this;
-    }
 
     public PhongMaterial setTexture(Texture t) {
         texture = t;
         return this;
     }
     
-    public PhongMaterial setShadowMap(Texture t) {
-        shadowMap = t;
-        return this;
-    }
 
     public void run(GameObject go, SubMesh subMesh) {
         Matrix4 model = go.localToWorld();
@@ -158,14 +143,13 @@ public class PhongMaterial extends Material {
 
         setMatrix4ToUniform("MVP", mvp);
         setMatrix4ToUniform("modelMatrix", model);
-
-        setVector3ToUniform("light_dir", main_light.light_dir);
+        
         setVector3ToUniform("ambient_light", AMBIENT_LIGHT);
         setVector3ToUniform("light_color", main_light.light_color);
-        setVector3ToUniform("view_pos", main_camera.transform.position);
-        setVector3ToUniform("albedo", albedo);        
+        setVector3ToUniform("view_pos", main_camera.transform.position);     
         
-        main_light.setShaderParameter(this);
+        setVector3ToUniform("light_dir", main_light.light_dir);
+        setVector3ToUniform("light_color", main_light.light_color);
         
         Texture useTex = texture;
 
@@ -176,7 +160,7 @@ public class PhongMaterial extends Material {
         if (useTex != null && useTex.isUploaded()) {            
             setTexture("tex", useTex, 0);
         }
-        setTexture("shadowMap", shadowMap, 1);
+        
     }
 
     void cleanup() {
@@ -184,34 +168,46 @@ public class PhongMaterial extends Material {
     }
 }
 
-public class QuadMaterial extends Material {
+public class LightMaterial extends Material {
 
-    Texture tex = new Texture(1,1);
+    Texture albedoTex = new Texture(1,1);
+    Texture normalTex = new Texture(1,1);
+    Texture positionTex = new Texture(1,1);
 
-    public QuadMaterial(String frag) {
+    public LightMaterial(String frag) {
         super(frag);
     }
 
-    public QuadMaterial(String frag, String vert) {
+    public LightMaterial(String frag, String vert) {
         super(frag, vert);
     }
 
-    public QuadMaterial setTexture(Texture t) {
-        tex = t;
+    public LightMaterial setAlbedoTex(Texture t) {
+        albedoTex = t;
+        return this;
+    }
+    public LightMaterial setNormalTex(Texture t) {
+        normalTex = t;
+        return this;
+    }
+    public LightMaterial setPositionTex(Texture t) {
+        positionTex = t;
         return this;
     }
 
     @Override
-    public void run(GameObject go, SubMesh subMesh) {
-        if (tex != null && tex.isUploaded()) {
-            setTexture("tex", tex, 0);
-        }
+    public void run(GameObject go, SubMesh subMesh) {        
+        setTexture("albedo", albedoTex, 0);
+        setTexture("worldNormal", normalTex, 1);
+        setTexture("worldPos", positionTex, 2);
+        setVector3ToUniform("view_pos", main_camera.transform.position);
+        setVector3ToUniform("ambient_light", AMBIENT_LIGHT);                
+        main_light.setShaderParameter();
     }
 
     void cleanup() {
-        if (tex != null && tex.tex != null) {
-            unbindTexture(0);
-        }
+        unbindTexture(0);
+        
     }
 }
 
