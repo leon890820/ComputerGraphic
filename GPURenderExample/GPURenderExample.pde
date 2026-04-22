@@ -9,7 +9,6 @@ import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL2ES2;
 import com.jogamp.opengl.GL3;
 
-
 static boolean GH_START_FULLSCREEN = false;
 static boolean GH_HIDE_MOUSE = true;
 static boolean GH_USE_SKY = true;
@@ -28,7 +27,7 @@ static int GH_MAX_RECURSION = 4;
 //Gameplay
 static float GH_MOUSE_SENSITIVITY = 0.005f;
 static float GH_MOUSE_SMOOTH = 0.5f;
-static float GH_WALK_SPEED = 1.0f;
+static float GH_WALK_SPEED = 0.02f;
 static float GH_WALK_ACCEL = 50.0f;
 static float GH_BOB_FREQ = 8.0f;
 static float GH_BOB_OFFS = 0.015f;
@@ -44,12 +43,16 @@ static Vector3 AMBIENT_LIGHT = new Vector3(0.3, 0.3, 0.3);
 boolean[] key_input={false, false, false, false};
 
 Camera main_camera;
-Light main_light;
+SpotLight main_light;
 
 PhongMaterial phongMaterial;
-PhongObject sponza;
+PhongMaterial floorMaterial;
+ShadowMaterial shadowMaterial;
 
-Texture pekoraTexture;
+PhongObject sponza;
+PhongObject floor;
+
+Texture floorTexture;
 
 PJOGL pgl;
 GL2ES2 gl;
@@ -58,7 +61,7 @@ GL3 gl3;
 QuadMaterial quadMaterial;
 Quad quad;
 
-FBO RSMGBuffer;
+FBO ShadowBuffer;
 
 float a = -PI/4;
 float time = 0.0;
@@ -85,17 +88,20 @@ void setup() {
 void draw() {
     
     move();   
-
-    RSMGBuffer.bindFrameBuffer();
-    sponza.run();
-    RSMGBuffer.unbindFrameBuffer(width,height);
+    main_light.setLightdirection(-1,-1,-1 );    
+    
+    ShadowBuffer.bindFrameBuffer();
+    sponza.runWithMaterial(shadowMaterial);
+    floor.runWithMaterial(shadowMaterial);
+    ShadowBuffer.unbindFrameBuffer(width,height);
 
     background(0);
-    quad.run();
+    sponza.run();
+    floor.run();
+    //quad.run();
     
-    main_light.setLightdirection(200 * cos(a), -100 ,200 * sin(a) );    
 
-
+    a+=0.1;
     
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
@@ -108,37 +114,41 @@ public void initSetting() {
 }
 
 void setGameObject() {
-    sponza = new PhongObject("../../Model/sponza/Scale300Sponza", phongMaterial);
+    sponza = new PhongObject("../../Model/Furina/Furina", phongMaterial);
     sponza.setScale(1,1,1);
-    //dragon.setScale(50, 50, 50);    
+    floor = new PhongObject("Meshes/quad", floorMaterial);  
+    floor.setEular(PI / 2,0,0).setScale(5,5,5).setPosition(0,0,0);
     quad = new Quad(quadMaterial);
 }
 
 void setMaterial() {  
-    RSMGBuffer = new FBO(width, height, 2, gl3.GL_LINEAR);
+    ShadowBuffer = new FBO(width, height, 1, gl3.GL_LINEAR, true);
     
     phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     phongMaterial.setAlbedo(0.57/1.5, 0.46/1.5, 0.36/1.5);
+    phongMaterial.setShadowMap(ShadowBuffer.depthTex);
     
-    pekoraTexture = new Texture("../../Model/sponza/textures/vase_plant.tga");
-    //phongMaterial.setTexture(pekoraTexture);
-    
+    floorMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
+    floorTexture = new Texture("Textures/Floor.png");
+    floorMaterial.setTexture(floorTexture);
+    floorMaterial.setShadowMap(ShadowBuffer.depthTex);
     quadMaterial = new QuadMaterial("Shaders/quad.frag", "Shaders/quad.vert");
-    quadMaterial.setTexture(RSMGBuffer.tex[0]);
+    quadMaterial.setTexture(ShadowBuffer.tex[0]);
     
-   
+    shadowMaterial = new ShadowMaterial("Shaders/Shadow.frag", "Shaders/Shadow.vert");
 }
 
 
 public void cameraSetting() {
     main_camera = new Camera();
-    main_camera.setPosition(0.0, -300.0, 800.0).setEular(-0.0, 0.0, 0.0);
+    main_camera.setPosition(0.0, 1.0, 5.0).setEular(-0.0, 0.0, 0.0);
     main_camera.setSize((float)width, (float)height, GH_NEAR_MAX, GH_FAR);
 }
 
 public void lightSetting() {
-    main_light = new Light(new Vector3(0, 0, 0), new Vector3(-200 * cos(a), 500, -200 * sin(a)), new Vector3(0.8));
-    main_light.setScale(2, 2, 2);
+    main_light = new SpotLight(new Vector3(10, 10,10), new Vector3(-200 * cos(a), 500, -200 * sin(a)), new Vector3(0.8));
+    main_light.setScale(1, 1, 1);
+    main_light.setPerspective(60.0,1.0,0.01,200);
 }
 
 

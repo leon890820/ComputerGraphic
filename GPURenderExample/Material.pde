@@ -121,8 +121,8 @@ public abstract class Material {
 
 public class PhongMaterial extends Material {
     Vector3 albedo = new Vector3(0.0f);
-    Matrix4 light_MVP;
     Texture texture;   // 可選：手動指定時用
+    Texture shadowMap;
 
     public PhongMaterial(String frag) {
         super(frag);
@@ -146,9 +146,9 @@ public class PhongMaterial extends Material {
         texture = t;
         return this;
     }
-
-    public PhongMaterial setLightMVP(Matrix4 m) {
-        light_MVP = m;
+    
+    public PhongMaterial setShadowMap(Texture t) {
+        shadowMap = t;
         return this;
     }
 
@@ -163,21 +163,20 @@ public class PhongMaterial extends Material {
         setVector3ToUniform("ambient_light", AMBIENT_LIGHT);
         setVector3ToUniform("light_color", main_light.light_color);
         setVector3ToUniform("view_pos", main_camera.transform.position);
-        setVector3ToUniform("albedo", albedo);
-
-        if (light_MVP != null) {
-            setMatrix4ToUniform("light_MVP", light_MVP);
-        }
-
+        setVector3ToUniform("albedo", albedo);        
+        
+        main_light.setShaderParameter(this);
+        
         Texture useTex = texture;
 
         if (useTex == null && subMesh != null) {
             useTex = subMesh.textureKa;
         }
-
-        if (useTex != null && useTex.isUploaded()) {
+        
+        if (useTex != null && useTex.isUploaded()) {            
             setTexture("tex", useTex, 0);
         }
+        setTexture("shadowMap", shadowMap, 1);
     }
 
     void cleanup() {
@@ -216,58 +215,27 @@ public class QuadMaterial extends Material {
     }
 }
 
-public class GBufferMaterial extends Material {
-    public GBufferMaterial(String frag) {
+public class ShadowMaterial extends Material {
+
+
+    public ShadowMaterial(String frag) {
         super(frag);
     }
 
-    public GBufferMaterial(String frag, String vert) {
+    public ShadowMaterial(String frag, String vert) {
         super(frag, vert);
     }
 
+    @Override
     public void run(GameObject go, SubMesh subMesh) {
         Matrix4 model = go.localToWorld();
-        Matrix4 view = main_camera.getViewMatrix();
-        Matrix4 project = main_camera.getProjectionMatrix();
-
-        setMatrix4ToUniform("modelMatrix", model);
-        setMatrix4ToUniform("viewMatrix", view);
-        setMatrix4ToUniform("projectMatrix", project);
-
-        if (subMesh != null && subMesh.textureKa != null && subMesh.textureKa.isUploaded()) {
-            setTexture("tex", subMesh.textureKa, 0);
-        }
-    }
-
-    void cleanup() {
-        unbindTexture(0);
-    }
-}
-
-public class RSMBufferMaterial extends Material {
-    public RSMBufferMaterial(String frag) {
-        super(frag);
-    }
-
-    public RSMBufferMaterial(String frag, String vert) {
-        super(frag, vert);
-    }
-
-    public void run(GameObject go, SubMesh subMesh) {
-        Matrix4 model = go.localToWorld();
-        Matrix4 view = main_camera.getViewMatrix();
-        Matrix4 lightView = main_light.lookAt();
-        Matrix4 lightProject = Matrix4.Ortho(-500, 500, -500, 500, 0.1, 1000);
-
-        setMatrix4ToUniform("modelMatrix", model);
-        setMatrix4ToUniform("viewMatrix", view);
-        setMatrix4ToUniform("lightVPMatrix", lightProject.mult(lightView));
+        Matrix4 view = main_light.getViewMatrix();
+        Matrix4 project = main_light.getProjectionMatrix();
         
-        if (subMesh != null && subMesh.textureKa != null && subMesh.textureKa.isUploaded()) {
-            setTexture("tex", subMesh.textureKa, 0);
-        }
+        setMatrix4ToUniform("Light_MVP", project.mult(view).mult(model));
     }
 
     void cleanup() {
+        
     }
 }

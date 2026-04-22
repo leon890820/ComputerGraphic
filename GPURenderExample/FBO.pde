@@ -2,12 +2,13 @@ public class FBO {
     IntBuffer fbo;
     IntBuffer rbo;
     Texture[] tex;
+    Texture depthTex;
 
     int fboWidth;
     int fboHeight;
     int colorCount;
 
-    public FBO(int w, int h, int num, int filter) {
+    public FBO(int w, int h, int num, int filter, boolean useDepthTexture) {
         fboWidth = w;
         fboHeight = h;
         colorCount = num;
@@ -21,11 +22,22 @@ public class FBO {
 
         int[] colorAttachments = new int[num];
 
+        // color attachments
         for (int i = 0; i < num; i++) {
             tex[i] = new Texture(w, h);
 
             gl3.glBindTexture(gl3.GL_TEXTURE_2D, tex[i].tex.get(0));
-            gl3.glTexImage2D(gl3.GL_TEXTURE_2D, 0, gl3.GL_RGBA32F, w, h, 0, gl3.GL_RGBA, gl3.GL_FLOAT, null);
+            gl3.glTexImage2D(
+                gl3.GL_TEXTURE_2D,
+                0,
+                gl3.GL_RGBA32F,
+                w,
+                h,
+                0,
+                gl3.GL_RGBA,
+                gl3.GL_FLOAT,
+                null
+            );
 
             gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MIN_FILTER, filter);
             gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MAG_FILTER, filter);
@@ -45,11 +57,49 @@ public class FBO {
 
         gl3.glBindTexture(gl3.GL_TEXTURE_2D, 0);
 
-        gl3.glGenRenderbuffers(1, rbo);
-        gl3.glBindRenderbuffer(gl3.GL_RENDERBUFFER, rbo.get(0));
-        gl3.glRenderbufferStorage(gl3.GL_RENDERBUFFER, gl3.GL_DEPTH_COMPONENT24, w, h);
-        gl3.glFramebufferRenderbuffer(gl3.GL_FRAMEBUFFER, gl3.GL_DEPTH_ATTACHMENT, gl3.GL_RENDERBUFFER, rbo.get(0));
-        gl3.glBindRenderbuffer(gl3.GL_RENDERBUFFER, 0);
+        // depth attachment
+        if (useDepthTexture) {
+            depthTex = new Texture(w, h);
+
+            gl3.glBindTexture(gl3.GL_TEXTURE_2D, depthTex.tex.get(0));
+            gl3.glTexImage2D(
+                gl3.GL_TEXTURE_2D,
+                0,
+                gl3.GL_DEPTH_COMPONENT24,
+                w,
+                h,
+                0,
+                gl3.GL_DEPTH_COMPONENT,
+                gl3.GL_FLOAT,
+                null
+            );
+
+            gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MIN_FILTER, gl3.GL_NEAREST);
+            gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_MAG_FILTER, gl3.GL_NEAREST);
+            gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_WRAP_S, gl3.GL_CLAMP_TO_EDGE);
+            gl3.glTexParameteri(gl3.GL_TEXTURE_2D, gl3.GL_TEXTURE_WRAP_T, gl3.GL_CLAMP_TO_EDGE);
+
+            gl3.glFramebufferTexture2D(
+                gl3.GL_FRAMEBUFFER,
+                gl3.GL_DEPTH_ATTACHMENT,
+                gl3.GL_TEXTURE_2D,
+                depthTex.tex.get(0),
+                0
+            );
+
+            gl3.glBindTexture(gl3.GL_TEXTURE_2D, 0);
+        } else {
+            gl3.glGenRenderbuffers(1, rbo);
+            gl3.glBindRenderbuffer(gl3.GL_RENDERBUFFER, rbo.get(0));
+            gl3.glRenderbufferStorage(gl3.GL_RENDERBUFFER, gl3.GL_DEPTH_COMPONENT24, w, h);
+            gl3.glFramebufferRenderbuffer(
+                gl3.GL_FRAMEBUFFER,
+                gl3.GL_DEPTH_ATTACHMENT,
+                gl3.GL_RENDERBUFFER,
+                rbo.get(0)
+            );
+            gl3.glBindRenderbuffer(gl3.GL_RENDERBUFFER, 0);
+        }
 
         gl3.glDrawBuffers(num, colorAttachments, 0);
 
@@ -82,6 +132,10 @@ public class FBO {
         return tex[index];
     }
 
+    Texture getDepthTexture() {
+        return depthTex;
+    }
+
     void dispose() {
         if (tex != null) {
             for (int i = 0; i < tex.length; i++) {
@@ -90,6 +144,11 @@ public class FBO {
                     gl3.glDeleteTextures(1, tex[i].tex);
                 }
             }
+        }
+
+        if (depthTex != null && depthTex.tex != null) {
+            depthTex.tex.rewind();
+            gl3.glDeleteTextures(1, depthTex.tex);
         }
 
         if (rbo != null) {

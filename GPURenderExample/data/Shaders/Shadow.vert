@@ -7,10 +7,10 @@
 
 
 
-uniform mat4 MVP;
-attribute vec4 vertex;
+uniform mat4 Light_MVP;
+layout(location = 0) in vec3 aVertexPosition;
 
 void main() {
   // Vertex in clip coordinates
-  gl_Position = MVP * vertex;
+  gl_Position = Light_MVP * vec4(aVertexPosition, 1.0);
 }

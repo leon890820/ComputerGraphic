@@ -172,12 +172,162 @@ public static class Matrix4 {
         set(1, 3, t.y());
         set(2, 3, t.z());
     }
+    
+    public Matrix4 div(float value) {
+        Matrix4 result = new Matrix4();
+    
+        if (abs(value) < 1e-8f) {
+            println("[Matrix4] div failed: value is too close to zero.");
+            return result;
+        }
+    
+        for (int i = 0; i < 16; i++) {
+            result.m[i] = m[i] / value;
+        }
+    
+        return result;
+    }
 
     public Matrix4 Inverse() {
-        // 你原本那版 inverse 可以留，但要確認它是對目前儲存格式正確。
-        // 最保守做法是先保留原始實作，等畫面確認後再替換。
-        // 這裡先給你一個占位，避免你直接貼上後忘記。
-        throw new RuntimeException("Replace Inverse() with a tested column-major version.");
+        Matrix4 inv = new Matrix4();
+    
+        inv.m[0] = m[5] * m[10] * m[15] -
+                   m[5] * m[11] * m[14] -
+                   m[9] * m[6] * m[15] +
+                   m[9] * m[7] * m[14] +
+                   m[13] * m[6] * m[11] -
+                   m[13] * m[7] * m[10];
+    
+        inv.m[4] = -m[4] * m[10] * m[15] +
+                    m[4] * m[11] * m[14] +
+                    m[8] * m[6] * m[15] -
+                    m[8] * m[7] * m[14] -
+                    m[12] * m[6] * m[11] +
+                    m[12] * m[7] * m[10];
+    
+        inv.m[8] = m[4] * m[9] * m[15] -
+                   m[4] * m[11] * m[13] -
+                   m[8] * m[5] * m[15] +
+                   m[8] * m[7] * m[13] +
+                   m[12] * m[5] * m[11] -
+                   m[12] * m[7] * m[9];
+    
+        inv.m[12] = -m[4] * m[9] * m[14] +
+                     m[4] * m[10] * m[13] +
+                     m[8] * m[5] * m[14] -
+                     m[8] * m[6] * m[13] -
+                     m[12] * m[5] * m[10] +
+                     m[12] * m[6] * m[9];
+    
+        inv.m[1] = -m[1] * m[10] * m[15] +
+                    m[1] * m[11] * m[14] +
+                    m[9] * m[2] * m[15] -
+                    m[9] * m[3] * m[14] -
+                    m[13] * m[2] * m[11] +
+                    m[13] * m[3] * m[10];
+    
+        inv.m[5] = m[0] * m[10] * m[15] -
+                   m[0] * m[11] * m[14] -
+                   m[8] * m[2] * m[15] +
+                   m[8] * m[3] * m[14] +
+                   m[12] * m[2] * m[11] -
+                   m[12] * m[3] * m[10];
+    
+        inv.m[9] = -m[0] * m[9] * m[15] +
+                    m[0] * m[11] * m[13] +
+                    m[8] * m[1] * m[15] -
+                    m[8] * m[3] * m[13] -
+                    m[12] * m[1] * m[11] +
+                    m[12] * m[3] * m[9];
+    
+        inv.m[13] = m[0] * m[9] * m[14] -
+                    m[0] * m[10] * m[13] -
+                    m[8] * m[1] * m[14] +
+                    m[8] * m[2] * m[13] +
+                    m[12] * m[1] * m[10] -
+                    m[12] * m[2] * m[9];
+    
+        inv.m[2] = m[1] * m[6] * m[15] -
+                   m[1] * m[7] * m[14] -
+                   m[5] * m[2] * m[15] +
+                   m[5] * m[3] * m[14] +
+                   m[13] * m[2] * m[7] -
+                   m[13] * m[3] * m[6];
+    
+        inv.m[6] = -m[0] * m[6] * m[15] +
+                    m[0] * m[7] * m[14] +
+                    m[4] * m[2] * m[15] -
+                    m[4] * m[3] * m[14] -
+                    m[12] * m[2] * m[7] +
+                    m[12] * m[3] * m[6];
+    
+        inv.m[10] = m[0] * m[5] * m[15] -
+                    m[0] * m[7] * m[13] -
+                    m[4] * m[1] * m[15] +
+                    m[4] * m[3] * m[13] +
+                    m[12] * m[1] * m[7] -
+                    m[12] * m[3] * m[5];
+    
+        inv.m[14] = -m[0] * m[5] * m[14] +
+                     m[0] * m[6] * m[13] +
+                     m[4] * m[1] * m[14] -
+                     m[4] * m[2] * m[13] -
+                     m[12] * m[1] * m[6] +
+                     m[12] * m[2] * m[5];
+    
+        inv.m[3] = -m[1] * m[6] * m[11] +
+                    m[1] * m[7] * m[10] +
+                    m[5] * m[2] * m[11] -
+                    m[5] * m[3] * m[10] -
+                    m[9] * m[2] * m[7] +
+                    m[9] * m[3] * m[6];
+    
+        inv.m[7] = m[0] * m[6] * m[11] -
+                   m[0] * m[7] * m[10] -
+                   m[4] * m[2] * m[11] +
+                   m[4] * m[3] * m[10] +
+                   m[8] * m[2] * m[7] -
+                   m[8] * m[3] * m[6];
+    
+        inv.m[11] = -m[0] * m[5] * m[11] +
+                     m[0] * m[7] * m[9] +
+                     m[4] * m[1] * m[11] -
+                     m[4] * m[3] * m[9] -
+                     m[8] * m[1] * m[7] +
+                     m[8] * m[3] * m[5];
+    
+        inv.m[15] = m[0] * m[5] * m[10] -
+                    m[0] * m[6] * m[9] -
+                    m[4] * m[1] * m[10] +
+                    m[4] * m[2] * m[9] +
+                    m[8] * m[1] * m[6] -
+                    m[8] * m[2] * m[5];
+    
+        float det = m[0] * inv.m[0] +
+                    m[1] * inv.m[4] +
+                    m[2] * inv.m[8] +
+                    m[3] * inv.m[12];
+    
+        if (abs(det) < 1e-8f) {
+            println("[Matrix4] inverse failed: determinant is too close to zero.");
+            return Matrix4.Identity();
+        }
+    
+        return inv.div(det);
+    }
+    
+    public static Matrix4 Perspective(float fov, float aspect, float near, float far){
+        float fovRad = fov * PI / 180.0f;
+        float f = 1.0f / tan(fovRad / 2.0f);
+        Matrix4 projection = Matrix4.Zero();
+        projection.set(0, 0, f / aspect);
+        projection.set(1, 1, f);
+        projection.set(2, 2, (far + near) / (near - far));
+        projection.set(2, 3, (2.0f * far * near) / (near - far));
+        projection.set(3, 2, -1.0f);
+        projection.set(3, 3, 0.0f);
+        
+        return projection;
     }
     
     public static Matrix4 Ortho(float left, float right,
