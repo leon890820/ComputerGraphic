@@ -1,16 +1,14 @@
-// Toon shader using per-pixel lighting. Based on the glsl 
-// tutorial from lighthouse 3D:
-// http://www.lighthouse3d.com/tutorials/glsl-tutorial/toon-shader-version-ii/
+#version 330 core
 
-#define PROCESSING_LIGHT_SHADER
+uniform mat4 modelMatrix;
+uniform mat4 shadowMatrix;
 
-
-
-
-uniform mat4 lightSpaceMatrix;
 layout(location = 0) in vec3 aVertexPosition;
 
+out vec3 FragWorldPos;
+
 void main() {
-  // Vertex in clip coordinates
-  gl_Position = lightSpaceMatrix * vec4(aVertexPosition, 1.0);
+    vec4 worldPos = modelMatrix * vec4(aVertexPosition, 1.0);
+    FragWorldPos = worldPos.xyz;
+    gl_Position = shadowMatrix * worldPos;
 }

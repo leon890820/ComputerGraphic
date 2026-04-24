@@ -48,6 +48,21 @@ public abstract class Material {
         tex.bind(unit);
         gl3.glUniform1i(location, unit);
     }
+    
+    public void setCubeTexture(String name, TextureCube tex, int unit) {
+        if (tex == null || tex.tex == null || !tex.isUploaded()) {
+            println("[Material] Warning: cube texture is null -> " + name);
+            return;
+        }
+    
+        int location = getUniformLocation(name);
+        if (location < 0) return;
+    
+        gl3.glActiveTexture(gl3.GL_TEXTURE0 + unit);
+        gl3.glBindTexture(gl3.GL_TEXTURE_CUBE_MAP, tex.tex.get(0));
+    
+        gl3.glUniform1i(location, unit);
+    }
 
     public void unbindTexture(int unit) {
         gl3.glActiveTexture(gl3.GL_TEXTURE0 + unit);
@@ -172,6 +187,42 @@ public class PhongMaterial extends Material {
     }
 }
 
+public class ShadowMaterial extends Material {
+    Light lightSource;
+    Matrix4 shadowMatrix;
+
+    public ShadowMaterial(String frag) {
+        super(frag);
+    }
+
+    public ShadowMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+    
+    public ShadowMaterial setLight(Light l) {
+        lightSource = l;
+        return this;
+    }
+    
+    public ShadowMaterial setShadowMatrix(Matrix4 m) {
+        shadowMatrix = m;
+        return this;
+    }
+
+    @Override
+    public void run(GameObject go, SubMesh subMesh) {        
+        Matrix4 model = go.localToWorld();
+        setMatrix4ToUniform("modelMatrix", model);
+        setMatrix4ToUniform("shadowMatrix", shadowMatrix);
+        setVector3ToUniform("lightPos", lightSource.transform.position);
+        setFloatToUniform("lightFar", lightSource.getLightFar());
+    }
+
+    void cleanup() {
+        
+    }
+}
+
 public class LightMaterial extends Material {
 
     Texture albedoTex = new Texture(1,1);
@@ -205,9 +256,6 @@ public class LightMaterial extends Material {
         setTexture("worldNormal", normalTex, 1);
         setTexture("worldPos", positionTex, 2);
 
-        setVector3ToUniform("view_pos", main_camera.transform.position);
-        setVector3ToUniform("ambient_light", AMBIENT_LIGHT);
-
         if (go instanceof Light) {
             Light light = (Light) go;
             light.setShaderParameter(this);
@@ -220,35 +268,5 @@ public class LightMaterial extends Material {
         unbindTexture(1);
         unbindTexture(2);
         unbindTexture(4); // shadowMap 如果有綁
-    }
-}
-
-public class ShadowMaterial extends Material {
-    Light lightSource;
-
-    public ShadowMaterial(String frag) {
-        super(frag);
-    }
-
-    public ShadowMaterial(String frag, String vert) {
-        super(frag, vert);
-    }
-    
-    public ShadowMaterial setLight(Light l) {
-        lightSource = l;
-        return this;
-    }
-
-    @Override
-    public void run(GameObject go, SubMesh subMesh) {
-        Matrix4 model = go.localToWorld();
-        Matrix4 view = lightSource.getViewMatrix();
-        Matrix4 project = lightSource.getProjectionMatrix();
-        
-        setMatrix4ToUniform("lightSpaceMatrix", project.mult(view).mult(model));
-    }
-
-    void cleanup() {
-        
     }
 }

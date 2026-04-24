@@ -11,26 +11,18 @@ uniform sampler2D shadowMap;
 
 uniform mat4 lightSpaceMatrix;
 uniform float lightFar;
-uniform float lightNear;
 
 uniform vec3 light_dir;
+uniform vec3 light_pos;
 
 in vec2 texcoord;
 
 layout(location = 0) out vec4 fragColor;
 
-float toLinear(float depth){
 
-    // Perspective depth: [0,1] -> [-1,1]
-    float z = depth * 2.0 - 1.0;
-    float linearDepth = (2.0 * lightNear * lightFar) /
-                        (lightFar + lightNear - z * (lightFar - lightNear));
-
-    return linearDepth / lightFar;
-}
-
-float ShadowCalculation(vec4 fragPosLightSpace, vec3 N, vec3 L)
+float ShadowCalculation(vec3 worldVertex,vec3 N, vec3 L)
 {
+    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(worldVertex, 1.0);
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
 
@@ -41,12 +33,11 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 N, vec3 L)
         return 0.0;
     }
 
-    float currentDepth = toLinear(projCoords.z);
-    float closestDepth = toLinear(texture(shadowMap, projCoords.xy).r);
+    vec3 fragToLight = worldVertex - light_pos;
 
-    float bias = max(0.0015 * (1.0 - dot(N, L)), 0.00015);
-    
-
+    float currentDepth = length(fragToLight);
+    float closestDepth = texture(shadowMap, projCoords.xy).r * lightFar;
+    float bias = max(0.015 * (1.0 - dot(N, L)), 0.015);    
     float shadow = currentDepth - 0.015 > closestDepth ? 0.7 : 0.0;
     return shadow;
 }
@@ -57,10 +48,7 @@ void main() {
   vec3 worldVertex = texture(worldPos, texcoord).rgb;
   vec3 N = texture(worldNormal, texcoord).rgb;
   vec3 L = normalize(-light_dir);
-
-
-  vec4 fragPosLightSpace = lightSpaceMatrix * vec4(worldVertex, 1.0);
-  float shadow = ShadowCalculation(fragPosLightSpace, N, L);
+  float shadow = ShadowCalculation(worldVertex, N, L);
   vec3 color = texture_color * (1.0 - shadow) ;
 
   fragColor = vec4(color , 1.0);

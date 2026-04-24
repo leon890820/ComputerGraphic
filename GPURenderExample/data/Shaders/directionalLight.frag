@@ -12,16 +12,18 @@ uniform sampler2D shadowMap;
 uniform mat4 lightSpaceMatrix;
 
 uniform vec3 light_dir;
+uniform vec3 light_pos;
 uniform vec3 view_pos;
-
+uniform float lightFar;
 
 in vec2 texcoord;
 
 layout(location = 0) out vec4 fragColor;
 
 
-float ShadowCalculation(vec4 fragPosLightSpace, vec3 N, vec3 L)
+float ShadowCalculation(vec3 worldVertex,vec3 N, vec3 L)
 {
+    vec4 fragPosLightSpace = lightSpaceMatrix * vec4(worldVertex, 1.0);
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
 
@@ -32,13 +34,13 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 N, vec3 L)
         return 0.0;
     }
 
-    float currentDepth = (projCoords.z);
-    float closestDepth = (texture(shadowMap, projCoords.xy).r);
+    float closestDepth = (texture(shadowMap, projCoords.xy).r) * lightFar;
+    vec3 fragToLight = worldVertex - light_pos;
 
-    float bias = max(0.0015 * (1.0 - dot(N, L)), 0.00015);
-    
+    float currentDepth = length(fragToLight);
 
-    float shadow = currentDepth - bias > closestDepth ? 0.5 : 0.0;
+    float bias = max(0.15 * (1.0 - dot(N, L)), 0.15);    
+    float shadow = currentDepth - 0.15 > closestDepth ? 0.7 : 0.0;
     return shadow;
 }
 
@@ -49,10 +51,9 @@ void main() {
   vec3 N = texture(worldNormal, texcoord).rgb;
   vec3 L = normalize(-light_dir);
 
-
-  vec4 fragPosLightSpace = lightSpaceMatrix * vec4(worldVertex, 1.0);
-  float shadow = ShadowCalculation(fragPosLightSpace, N, L);
+  float shadow = ShadowCalculation(worldVertex, N, L);
   vec3 color = texture_color * (1.0 - shadow) ;
 
-  fragColor = vec4(color , 1.0);
+  
+  fragColor = vec4(color, 1.0);
 }

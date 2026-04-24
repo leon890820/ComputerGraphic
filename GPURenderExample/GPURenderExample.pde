@@ -43,11 +43,10 @@ static Vector3 AMBIENT_LIGHT = new Vector3(0.3, 0.3, 0.3);
 boolean[] key_input={false, false, false, false};
 
 Camera main_camera;
-DirectionalLight main_light;
+Light main_light;
 
 PhongMaterial phongMaterial;
 PhongMaterial floorMaterial;
-ShadowMaterial shadowMaterial;
 
 PhongObject sponza;
 PhongObject floor;
@@ -58,14 +57,12 @@ PJOGL pgl;
 GL2ES2 gl;
 GL3 gl3;
 
-
-FBO ShadowBuffer;
 FBO GBuffer;
 
 float a = -PI/4;
 float time = 0.0;
 
-
+ArrayList<GameObject> worldObject = new ArrayList<GameObject>();
 
 
 void setup() {
@@ -76,10 +73,10 @@ void setup() {
     gl = pgl.gl.getGL2ES2();
     gl3 = pgl.gl.getGL3();
     endPGL();
-
-    lightSetting();
+    
     cameraSetting();
     setMaterial();
+    lightSetting();
     initSetting();
 }
 
@@ -89,24 +86,21 @@ void draw() {
     move();   
     main_light.setLightdirection(-1,-1,-1 );    
     
-    ShadowBuffer.bindFrameBuffer();
-    shadowMaterial.setLight(main_light);
-    sponza.runWithMaterial(shadowMaterial);
-    floor.runWithMaterial(shadowMaterial);
-    ShadowBuffer.unbindFrameBuffer(width,height);
+    main_light.lightShadowPass();
+       
     
+    GBuffer.bindFrameBuffer();
     phongMaterial.setLight(main_light);
     floorMaterial.setLight(main_light);
-    GBuffer.bindFrameBuffer();
-    sponza.run();
-    floor.run();
+    worldObject.forEach(GameObject::run);
     GBuffer.unbindFrameBuffer(width,height);
     
-    background(0);
+    background(0);   
     main_light.run();
     
+    //main_light.setPosition(new Vector3(5 * sin(a),5,5 * cos(a)));
 
-    a+=0.1;
+    a+=0.01;
     
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
@@ -123,20 +117,18 @@ void setGameObject() {
     sponza.setScale(1,1,1);
     floor = new PhongObject("Meshes/quad", floorMaterial);  
     floor.setEular(PI / 2,0,0).setScale(5,5,5).setPosition(0,0,0);
+    worldObject.add(sponza);
+    worldObject.add(floor);
 }
 
 void setMaterial() {  
-    ShadowBuffer = new FBO(width, height, 1, gl3.GL_LINEAR, true);
     GBuffer = new FBO(width, height, 3, gl3.GL_LINEAR, true);
     
     phongMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");    
     floorMaterial = new PhongMaterial("Shaders/BlinnPhong.frag", "Shaders/BlinnPhong.vert");
     floorTexture = new Texture("Textures/Floor.png");
     floorMaterial.setTexture(floorTexture);
-    
-    main_light.setShadowMap(ShadowBuffer.depthTex).setAlbedoTex(GBuffer.tex[0]).setNormalTex(GBuffer.tex[1]).setPositionTex(GBuffer.tex[2]);
-    
-    shadowMaterial = new ShadowMaterial("Shaders/Shadow.frag", "Shaders/Shadow.vert");
+       
 }
 
 
@@ -147,7 +139,8 @@ public void cameraSetting() {
 }
 
 public void lightSetting() {
-    main_light = new DirectionalLight(new Vector3(10, 10,10), new Vector3(-200 * cos(a), 500, -200 * sin(a)), new Vector3(0.8));
+    main_light = new PointLight(new Vector3(0, 5,5), new Vector3(0.8));
+    //main_light = new SpotLight(new Vector3(5, 5,5), new Vector3(-200 * cos(a), 500, -200 * sin(a)), new Vector3(0.8));
     main_light.setScale(1, 1, 1);
     //main_light.setPerspective(60.0,1.0,0.01,200);
 }
@@ -206,14 +199,4 @@ void move() {
 
     main_camera.setPosition(pos);
     main_camera.update();
-}
-
-void exit() {
-    beginPGL();
-
-    if (ShadowBuffer != null) ShadowBuffer.dispose();
-    if (GBuffer != null) GBuffer.dispose();
-
-    endPGL();
-    super.exit();
 }
