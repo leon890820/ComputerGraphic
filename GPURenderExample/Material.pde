@@ -5,6 +5,7 @@ public abstract class Material {
 
     private HashMap<String, Integer> uniformCache = new HashMap<String, Integer>();
     private FloatBuffer matrixBuffer = allocateDirectFloatBuffer(16);
+    Light lightSource;
 
     public Material(String frag) {
         shader = loadShader(frag);
@@ -127,6 +128,11 @@ public abstract class Material {
     public void unbind() {
         shader.unbind();
     }
+    
+    public Material setLight(Light l) {
+        lightSource = l;
+        return this;
+    }
 
     abstract void run(GameObject go, SubMesh subMesh);
 
@@ -136,7 +142,7 @@ public abstract class Material {
 
 public class PhongMaterial extends Material {
     Texture texture;   // 可選：手動指定時用
-    Light lightSource;
+
     public PhongMaterial(String frag) {
         super(frag);
     }
@@ -150,10 +156,7 @@ public class PhongMaterial extends Material {
         texture = t;
         return this;
     }
-    public PhongMaterial setLight(Light l) {
-        lightSource = l;
-        return this;
-    }
+
 
     public void run(GameObject go, SubMesh subMesh) {
         Matrix4 model = go.localToWorld();
@@ -189,7 +192,6 @@ public class PhongMaterial extends Material {
 
 public class ShadowMaterial extends Material {
     Light lightSource;
-    Matrix4 shadowMatrix;
 
     public ShadowMaterial(String frag) {
         super(frag);
@@ -203,12 +205,40 @@ public class ShadowMaterial extends Material {
         lightSource = l;
         return this;
     }
+
+
+    @Override
+    public void run(GameObject go, SubMesh subMesh) {        
+        Matrix4 model = go.localToWorld();
+        Matrix4 shadowMatrix = lightSource.getProjectionMatrix().mult(lightSource.getViewMatrix());
+        setMatrix4ToUniform("modelMatrix", model);
+        setMatrix4ToUniform("shadowMatrix", shadowMatrix);
+        setVector3ToUniform("lightPos", lightSource.transform.position);
+        setFloatToUniform("lightFar", lightSource.getLightFar());    
+        
+    }
+
+    void cleanup() {
+        
+    }
+}
+
+public class PointShadowMaterial extends ShadowMaterial {
+    Matrix4 shadowMatrix;
+
+    public PointShadowMaterial(String frag) {
+        super(frag);
+    }
+
+    public PointShadowMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
     
-    public ShadowMaterial setShadowMatrix(Matrix4 m) {
+    public PointShadowMaterial setShadowMatrix(Matrix4 m){
         shadowMatrix = m;
         return this;
     }
-
+    
     @Override
     public void run(GameObject go, SubMesh subMesh) {        
         Matrix4 model = go.localToWorld();
@@ -216,9 +246,6 @@ public class ShadowMaterial extends Material {
         setMatrix4ToUniform("shadowMatrix", shadowMatrix);
         setVector3ToUniform("lightPos", lightSource.transform.position);
         setFloatToUniform("lightFar", lightSource.getLightFar());
-    }
-
-    void cleanup() {
         
     }
 }
@@ -228,6 +255,7 @@ public class LightMaterial extends Material {
     Texture albedoTex = new Texture(1,1);
     Texture normalTex = new Texture(1,1);
     Texture positionTex = new Texture(1,1);
+    Texture depthTex = new Texture(1,1);
 
     public LightMaterial(String frag) {
         super(frag);
@@ -249,17 +277,21 @@ public class LightMaterial extends Material {
         positionTex = t;
         return this;
     }
+    public LightMaterial setDepthTex(Texture t) {
+        depthTex = t;
+        return this;
+    }
+    
 
     @Override
     public void run(GameObject go, SubMesh subMesh) {
         setTexture("albedo", albedoTex, 0);
         setTexture("worldNormal", normalTex, 1);
         setTexture("worldPos", positionTex, 2);
+        setTexture("shadowMap", depthTex, 3);
 
-        if (go instanceof Light) {
-            Light light = (Light) go;
-            light.setShaderParameter(this);
-        }
+        lightSource.setShaderParameter(this);
+        
     }
 
     @Override
@@ -269,4 +301,32 @@ public class LightMaterial extends Material {
         unbindTexture(2);
         unbindTexture(4); // shadowMap 如果有綁
     }
+}
+
+public class PointLightMaterial extends LightMaterial{
+    TextureCube shadowCubeMap; 
+    public PointLightMaterial(String frag) {
+        super(frag);
+    }
+
+    public PointLightMaterial(String frag, String vert) {
+        super(frag, vert);
+    }
+    
+    public LightMaterial setDepthTex(TextureCube t) {
+        shadowCubeMap = t;
+        return this;
+    }
+    
+    @Override
+    public void run(GameObject go, SubMesh subMesh) {
+        setTexture("albedo", albedoTex, 0);
+        setTexture("worldNormal", normalTex, 1);
+        setTexture("worldPos", positionTex, 2);
+        setCubeTexture("shadowCubeMap", shadowCubeMap, 3);
+
+        lightSource.setShaderParameter(this);
+        
+    }
+
 }

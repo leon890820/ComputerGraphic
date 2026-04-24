@@ -6,13 +6,9 @@ public class DirectionalLight extends Light {
     public float top = 5.0f;
     public float near = 0.01f;
     public float far = 200.0f;
-    FBO shadowBuffer;
-    Texture shadowMap;
 
     public DirectionalLight(Vector3 pos, Vector3 dir, Vector3 c) {
-        super(pos, dir, c, new LightMaterial("Shaders/directionalLight.frag", "Shaders/quad.vert"));
-        shadowBuffer = new FBO(width, height, 1, gl3.GL_LINEAR, true);
-        setShadowMap(shadowBuffer.depthTex).setAlbedoTex(GBuffer.tex[0]).setNormalTex(GBuffer.tex[1]).setPositionTex(GBuffer.tex[2]);
+        super(pos, dir, c);
     }
 
     @Override
@@ -43,7 +39,6 @@ public class DirectionalLight extends Light {
         material.setVector3ToUniform("light_dir", light_dir);
         material.setFloatToUniform("lightFar", far);
         material.setVector3ToUniform("light_pos", transform.position);       
-        material.setTexture("shadowMap", shadowMap, 3);
     }   
     
     @Override
@@ -51,21 +46,6 @@ public class DirectionalLight extends Light {
         return far;
     }
     
-    @Override
-    public void lightShadowPass(){
-        shadowBuffer.bindFrameBuffer();
-        shadowMaterial.setShadowMatrix(getProjectionMatrix().mult(getViewMatrix()));
-        shadowMaterial.setLight(this);
-        for(GameObject go : worldObject){
-            go.runWithMaterial(shadowMaterial);    
-        }    
-        shadowBuffer.unbindFrameBuffer(width,height);
-    }
-    
-    public Light setShadowMap(Texture tex) {
-        shadowMap = tex;
-        return this;
-    }
 }    
 public class SpotLight extends Light {
 
@@ -76,13 +56,9 @@ public class SpotLight extends Light {
 
     public float cutoff = 12.5f;
     public float outerCutoff = 17.5f;
-    FBO shadowBuffer;
-    Texture shadowMap;
 
     public SpotLight(Vector3 pos, Vector3 dir, Vector3 c) {
-        super(pos, dir, c, new LightMaterial("Shaders/spotLight.frag", "Shaders/quad.vert"));
-        shadowBuffer = new FBO(width, height, 1, gl3.GL_LINEAR, true);
-        setShadowMap(shadowBuffer.depthTex).setAlbedoTex(GBuffer.tex[0]).setNormalTex(GBuffer.tex[1]).setPositionTex(GBuffer.tex[2]);
+        super(pos, dir, c);
     }
 
     @Override
@@ -115,7 +91,6 @@ public class SpotLight extends Light {
         material.setVector3ToUniform("light_dir", light_dir);  
         material.setVector3ToUniform("light_pos", transform.position);       
         material.setFloatToUniform("lightFar", far);
-        material.setTexture("shadowMap", shadowMap, 3);
     }   
     
     @Override
@@ -123,21 +98,6 @@ public class SpotLight extends Light {
         return far;
     }
     
-    @Override
-    public void lightShadowPass(){
-        shadowBuffer.bindFrameBuffer();
-        shadowMaterial.setShadowMatrix(getProjectionMatrix().mult(getViewMatrix()));
-        shadowMaterial.setLight(this);
-        for(GameObject go : worldObject){
-            go.runWithMaterial(shadowMaterial);    
-        }    
-        shadowBuffer.unbindFrameBuffer(width,height);
-    }
-    
-    public Light setShadowMap(Texture tex) {
-        shadowMap = tex;
-        return this;
-    }
     
 }
 
@@ -148,14 +108,8 @@ public class PointLight extends Light {
     float far = 1000.0f;
     float intensity = 1.0f;
 
-    TextureCube shadowCubeMap;        
-    CubeMapFBO pointShadowBuffer;
-
     public PointLight(Vector3 pos, Vector3 c) {
-        super(pos, new Vector3(0, 0, 0), c,new LightMaterial("Shaders/pointLight.frag", "Shaders/quad.vert"));
-        pointShadowBuffer = new CubeMapFBO(width,1,true);
-        shadowCubeMap = pointShadowBuffer.depthTex;
-        setAlbedoTex(GBuffer.tex[0]).setNormalTex(GBuffer.tex[1]).setPositionTex(GBuffer.tex[2]);
+        super(pos, new Vector3(0, 0, 0), c);
     }
 
     public PointLight setRadius(float r) {
@@ -173,12 +127,6 @@ public class PointLight extends Light {
         far = f;
         return this;
     }
-
-    public PointLight setShadowCubeMap(TextureCube tex) {
-        shadowCubeMap = tex;
-        return this;
-    }
-
 
     public float getRadius() {
         return radius;
@@ -224,31 +172,12 @@ public class PointLight extends Light {
         mat.setVector3ToUniform("light_color", light_color);
         //mat.setFloatToUniform("light_radius", radius);
         //mat.setFloatToUniform("light_intensity", intensity);
-        mat.setFloatToUniform("lightFar", far);
-                
-        mat.setCubeTexture("shadowCubeMap", shadowCubeMap, 3);
-        
+        mat.setFloatToUniform("lightFar", far);        
     }
 
     
     public float getLightFar(){
         return far;
-    }
-    
-    @Override
-    public void lightShadowPass(){
-        shadowMaterial.setLight(this);
-        Matrix4[] shadowMatrices = getShadowMatrices();    
-        gl3.glEnable(gl3.GL_DEPTH_TEST);    
-        for (int face = 0; face < 6; face++) {
-            pointShadowBuffer.bindFace(face);    
-            gl3.glClear(gl3.GL_DEPTH_BUFFER_BIT); // ⭐ 必加    
-            shadowMaterial.setShadowMatrix(shadowMatrices[face]);    
-            for(GameObject go : worldObject){
-                go.runWithMaterial(shadowMaterial);    
-            }
-        }    
-        pointShadowBuffer.unbind(width, height); // ⭐ 必加
-    }
+    }    
     
 }

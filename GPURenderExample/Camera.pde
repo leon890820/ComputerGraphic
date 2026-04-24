@@ -1,4 +1,4 @@
-public class Camera extends GameObject {
+public class Camera extends Quad {
     Matrix4 projection = new Matrix4();
     Matrix4 worldView = new Matrix4();
 
@@ -14,6 +14,7 @@ public class Camera extends GameObject {
     private boolean vpDirty = true;
 
     Camera() {
+        super(null);
         wid = 256.0f;
         hei = 256.0f;
         near = 0.1f;
@@ -217,4 +218,7 @@ public class Camera extends GameObject {
 
         vpDirty = true;
     }
+    
+    
+    
 }

@@ -59,6 +59,9 @@ GL3 gl3;
 
 FBO GBuffer;
 
+Scene scene;
+Renderer renderer;
+
 float a = -PI/4;
 float time = 0.0;
 
@@ -78,6 +81,9 @@ void setup() {
     setMaterial();
     lightSetting();
     initSetting();
+    
+    setupScene();
+    setupRenderer();
 }
 
 
@@ -85,27 +91,29 @@ void draw() {
     
     move();   
     main_light.setLightdirection(-1,-1,-1 );    
-    
-    main_light.lightShadowPass();
-       
-    
-    GBuffer.bindFrameBuffer();
-    phongMaterial.setLight(main_light);
-    floorMaterial.setLight(main_light);
-    worldObject.forEach(GameObject::run);
-    GBuffer.unbindFrameBuffer(width,height);
-    
     background(0);   
-    main_light.run();
-    
+    renderer.render();    
     //main_light.setPosition(new Vector3(5 * sin(a),5,5 * cos(a)));
-
     a+=0.01;
     
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);
     surface.setTitle(txt_fps);
 }
 
+public void setupScene(){
+    scene = new Scene();
+    scene.setCamera(main_camera);
+
+    scene.addObject(sponza);
+    scene.addObject(floor);
+
+    scene.addLight(main_light);
+}
+
+public void setupRenderer(){
+    RenderContext ctx = new RenderContext(scene, main_camera, width, height);
+    renderer = new Renderer(ctx);
+}
 
 
 public void initSetting() {
