@@ -93,7 +93,7 @@ void draw() {
     main_light.setLightdirection(-1,-1,-1 );    
     background(0);   
     renderer.render();    
-    //main_light.setPosition(new Vector3(5 * sin(a),5,5 * cos(a)));
+    main_light.setPosition(new Vector3(5 * sin(a),5,5 * cos(a)));
     a+=0.01;
     
     String txt_fps = String.format(getClass().getName()+ " [frame %d]   [fps %6.2f]", frameCount, frameRate);

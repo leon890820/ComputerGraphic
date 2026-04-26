@@ -46,6 +46,23 @@ public class DirectionalLight extends Light {
         return far;
     }
     
+    @Override
+    public void renderShadow(RenderContext ctx, Renderer renderer) {
+        renderer.shadowPass.render(ctx);
+    }
+
+    @Override
+    public void renderLighting(RenderContext ctx, Renderer renderer) {
+        Texture[] buffer = renderer.gBufferPass.getBuffer();
+        Texture depth = renderer.shadowPass.getDepthBuffer();
+
+        renderer.directionalScenePass.setGBuffer(
+            buffer[0], buffer[1], buffer[2], depth
+        );
+
+        renderer.directionalScenePass.render(ctx);
+    }
+    
 }    
 public class SpotLight extends Light {
 
@@ -97,7 +114,23 @@ public class SpotLight extends Light {
     public float getLightFar(){
         return far;
     }
-    
+
+    @Override
+    public void renderShadow(RenderContext ctx, Renderer renderer) {
+        renderer.shadowPass.render(ctx);
+    }
+
+    @Override
+    public void renderLighting(RenderContext ctx, Renderer renderer) {
+        Texture[] buffer = renderer.gBufferPass.getBuffer();
+        Texture depth = renderer.shadowPass.getDepthBuffer();
+
+        renderer.spotScenePass.setGBuffer(
+            buffer[0], buffer[1], buffer[2], depth
+        );
+
+        renderer.spotScenePass.render(ctx);
+    }
     
 }
 
@@ -178,6 +211,23 @@ public class PointLight extends Light {
     
     public float getLightFar(){
         return far;
-    }    
+    }  
+    
+    @Override
+    public void renderShadow(RenderContext ctx, Renderer renderer) {
+        renderer.pointShadowPass.render(ctx);
+    }
+
+    @Override
+    public void renderLighting(RenderContext ctx, Renderer renderer) {
+        Texture[] buffer = renderer.gBufferPass.getBuffer();
+        TextureCube depth = renderer.pointShadowPass.getDepthBuffer();
+
+        renderer.pointScenePass.setGBuffer(
+            buffer[0], buffer[1], buffer[2], depth
+        );
+
+        renderer.pointScenePass.render(ctx);
+    }
     
 }

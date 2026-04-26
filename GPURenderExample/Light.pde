@@ -38,4 +38,8 @@ public abstract class Light extends GameObject {
     public abstract Matrix4 getProjectionMatrix();
     public abstract void setShaderParameter(LightMaterial material);
     public abstract float getLightFar();
+    
+    public abstract void renderShadow(RenderContext ctx, Renderer renderer);
+
+    public abstract void renderLighting(RenderContext ctx, Renderer renderer);
 }
